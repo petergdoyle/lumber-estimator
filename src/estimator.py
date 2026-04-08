@@ -3,6 +3,8 @@ import os
 import re
 from config import load_project_config
 from dimensions import parse_fraction, calculate_bf, calculate_sqft
+from packer import pack_material
+from draw_layout import draw_packed_bin
 
 def extract_thickness(mat):
     mat = str(mat)
@@ -116,7 +118,140 @@ def run_estimation(config):
         
     summary_df = pd.DataFrame(summary)
     
-    # Save output to project directory directly
+    # --- 2D BIN PACKING & SHOPPING LIST GENERATION ---
+    shopping_list = []
+    
+    # Process layout algorithm grouping by material
+    materials = parts_df['material'].unique()
+    for mat in materials:
+        # Gather Parts
+        m_parts = parts_df[parts_df['material'] == mat]
+        parts_list = []
+        for i, p in m_parts.iterrows():
+            desc = p.get('description', f"Part_{i}")
+            if pd.isna(desc):
+                desc = f"Part_{i}"
+            parts_list.append({
+                'id': desc,
+                'desc': desc,
+                'width': float(p['width_val']),
+                'length': float(p['length_val']),
+                'qty': int(float(p['qty']))
+            })
+            
+        # Gather Bins (Inventory)
+        bins_list = []
+        try:
+            if 'inv_df' in locals() and not inv_df.empty:
+                m_inv = inv_df[inv_df['material'] == mat]
+                for i, b in m_inv.iterrows():
+                    lbl = b.get('label', f"Board_{i}")
+                    if pd.isna(lbl):
+                        lbl = f"Board_{i}"
+                    bins_list.append({
+                        'id': lbl,
+                        'label': lbl,
+                        'width': float(b['width_val']),
+                        'length': float(b['length_val']),
+                        'qty': int(float(b['qty']))
+                    })
+        except Exception:
+            pass
+        
+        # Pull cut spacing (kerf) natively from config or default to 0.125
+        cut_spacing = config.get('waste_allowances', {}).get('cut_spacing', 0.125)
+        
+        # Execute Pack
+        pack_res = pack_material(parts_list, bins_list, kerf=cut_spacing)
+        
+        # Render Blueprint Visualizations
+        for pbin in pack_res['packed_bins']:
+            draw_packed_bin(pbin, mat, project_dir)
+            
+        # Collect Unpacked orphans for the dimensional shopping list
+        # Instead of just dumping them loosely, we pack them into standard "Virtual Boards" for purchasing
+        if pack_res['unpacked_parts']:
+            is_sheet = "Plywood" in mat or "Sheet Goods" in mat
+            virtual_bins = []
+            
+            remaining_parts = list(pack_res['unpacked_parts'])
+            virtual_board_idx = 1
+            
+            while remaining_parts:
+                curr_parts_for_virtual = []
+                for up in remaining_parts:
+                    curr_parts_for_virtual.append({
+                        'id': up['uid'],
+                        'desc': up['desc'],
+                        'width': up['width'],
+                        'length': up['length'],
+                        'qty': 1
+                    })
+                    
+                # Virtual Size Heuristics
+                if is_sheet:
+                    v_width = 48.0
+                    v_length = 96.0
+                else:
+                    v_length = 96.0
+                    if curr_parts_for_virtual:
+                        # Widest part + kerf + 1 inch padding margin for rough lumber buys
+                        v_width = max([p['width'] for p in curr_parts_for_virtual]) + cut_spacing + 1.0 
+                    else:
+                        v_width = 10.0
+                
+                v_bin = {
+                    'id': f"TO_BUY_{virtual_board_idx}",
+                    'label': "To Buy Sheet" if is_sheet else "To Buy Board",
+                    'width': v_width,
+                    'length': v_length,
+                    'qty': 1
+                }
+                
+                # Attempt to pack the leftovers into this single phantom board
+                v_pack_res = pack_material(curr_parts_for_virtual, [v_bin], kerf=cut_spacing)
+                
+                packed_pbin = v_pack_res['packed_bins'][0] if v_pack_res['packed_bins'] else None
+                if packed_pbin and packed_pbin['rects']:
+                    # Draw a native blueprint showing exactly how to break down the new board you buy
+                    draw_packed_bin(packed_pbin, mat, project_dir)
+                    virtual_bins.append({
+                        'Material': mat,
+                        'Item to Procure': packed_pbin['bin_uid'],
+                        'Description': "Virtual Shop Board",
+                        'Required Width (in)': v_width,
+                        'Required Length (in)': v_length
+                    })
+                
+                # Advance remaining parts loop
+                remaining_parts = list(v_pack_res['unpacked_parts'])
+                virtual_board_idx += 1
+                
+                # Absolute safety break against geometry that exceeds 8 feet (like very long rails)
+                if virtual_board_idx > 50:
+                    for upart in remaining_parts:
+                        shopping_list.append({
+                            'Material': mat,
+                            'Item to Procure': upart['uid'],
+                            'Description': "**OVERSIZED PART ERROR**",
+                            'Required Width (in)': upart['width'],
+                            'Required Length (in)': upart['length']
+                        })
+                    break
+                    
+            for vb in virtual_bins:
+                shopping_list.append(vb)
+            
+    # Save the custom shopping list of required material modules
+    if shopping_list:
+        shop_df = pd.DataFrame(shopping_list)
+        shop_df.to_csv(os.path.join(project_dir, 'purchasing_dimensions.csv'), index=False)
+    else:
+        # Write an empty file to indicate perfection
+        with open(os.path.join(project_dir, 'purchasing_dimensions.csv'), 'w') as f:
+            f.write("Status\nAll parts fit exactly into the on-hand inventory!")
+            
+    # Save volume output to project directory directly
     output_dir = project_dir
     os.makedirs(output_dir, exist_ok=True)
     out_path = os.path.join(output_dir, 'estimation_summary.csv')

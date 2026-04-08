@@ -8,10 +8,9 @@ ENV/
 env/
 
 # Data and Logs
-output/*
-!output/.gitkeep
-data/*
-!data/.gitkeep
+projects/*
+!projects/sample-*/
+!projects/.gitkeep
 *.log
 
 # IDEs

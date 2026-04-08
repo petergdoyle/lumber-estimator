@@ -3,6 +3,7 @@ import argparse
 import sys
 from config import load_project_config
 from estimator import run_estimation
+from visualize import generate_volume_chart
 
 def main():
     parser = argparse.ArgumentParser(description="Lumber Estimator")
@@ -44,7 +45,16 @@ def main():
         print("\nEstimation Summary:")
         print(summary.to_string(index=False))
         
+        # Add Visualization Hook
+        generate_volume_chart(summary, project_dir)
+        
+        # Compile everything into a PDF
+        from visualize import compile_report_pdf
+        compile_report_pdf(project_dir)
+        
         print(f"\nSaved estimation summary to {project_dir}/estimation_summary.csv")
+        print(f"Saved capacity chart to {project_dir}/capacity_chart.png")
+        print(f"Saved visual report to {project_dir}/visual_report.pdf")
         
     except Exception as e:
         print(f"Error: {e}")

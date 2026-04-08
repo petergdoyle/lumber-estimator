@@ -1,5 +1,5 @@
 project:
-  name: "Kates Dresser"
+  name: "Sample Dresser"
   files:
     parts: "parts.csv"
     inventory: "on-hand.csv"
