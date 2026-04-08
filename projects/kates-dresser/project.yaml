@@ -1,0 +1,8 @@
+project:
+  name: "Kates Dresser"
+  files:
+    parts: "parts.csv"
+    inventory: "on-hand.csv"
+  waste_allowances:
+    lumber: 0.30
+    sheet_goods: 0.20

@@ -2,13 +2,32 @@ VENV = .venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
 
-.PHONY: setup run clean test
+# Find all projects that have a project.yaml
+PROJECTS := $(patsubst projects/%/project.yaml,%,$(wildcard projects/*/project.yaml))
+PROJECT_TARGETS := $(addprefix project-, $(PROJECTS))
+
+.PHONY: setup run clean test help $(PROJECT_TARGETS)
+
+help:
+	@echo "Available commands:"
+	@echo "  make setup        - Initialize virtual environment and install dependencies"
+	@echo "  make help         - Show this help message"
+	@echo "  make test         - Run tests"
+	@echo "  make clean        - Clean virtual environment and caches"
+	@echo "\nAvailable projects:"
+	@for p in $(PROJECTS); do \
+		echo "  make project-$$p"; \
+	done
+
+$(PROJECT_TARGETS): project-%:
+	$(PYTHON) src/main.py $*
 
 setup:
 	python3 -m venv $(VENV)
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
-	touch data/.gitkeep output/.gitkeep
+	mkdir -p projects
+	touch projects/.gitkeep
 
 run:
 	$(PYTHON) src/main.py
