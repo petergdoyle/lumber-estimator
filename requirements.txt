@@ -4,3 +4,4 @@ PyYAML
 matplotlib
 seaborn
 rectpack
+markdown-pdf

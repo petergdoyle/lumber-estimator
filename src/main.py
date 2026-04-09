@@ -49,12 +49,15 @@ def main():
         generate_volume_chart(summary, project_dir)
         
         # Compile everything into a PDF
-        from visualize import compile_report_pdf
+        from visualize import compile_report_pdf, generate_buy_report_pdf
         compile_report_pdf(project_dir)
+        generate_buy_report_pdf(project_dir)
         
         print(f"\nSaved estimation summary to {project_dir}/estimation_summary.csv")
         print(f"Saved capacity chart to {project_dir}/capacity_chart.png")
         print(f"Saved visual report to {project_dir}/visual_report.pdf")
+        print(f"Saved grayscale visual report to {project_dir}/visual_report_grayscale.pdf")
+        print(f"Saved buy report PDF to {project_dir}/buy_report.pdf")
         
     except Exception as e:
         print(f"Error: {e}")

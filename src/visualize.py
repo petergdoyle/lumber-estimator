@@ -4,6 +4,20 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from PIL import Image
+from markdown_pdf import MarkdownPdf, Section
+
+def generate_buy_report_pdf(project_dir):
+    md_path = os.path.join(project_dir, 'buy_report.md')
+    pdf_path = os.path.join(project_dir, 'buy_report.pdf')
+    if os.path.exists(md_path):
+        try:
+            pdf = MarkdownPdf(toc_level=2)
+            with open(md_path, 'r') as f:
+                content = f.read()
+            pdf.add_section(Section(content))
+            pdf.save(pdf_path)
+        except Exception as e:
+            print(f"Warning: Failed to generate buy_report.pdf - {e}")
 
 def generate_volume_chart(summary_df, output_dir):
     """
@@ -53,6 +67,7 @@ def generate_volume_chart(summary_df, output_dir):
 def compile_report_pdf(project_dir):
     """
     Compiles all layout blueprints and the overall capacity chart into a single PDF.
+    Also generates grayscale versions of all visualizations and a compiled grayscale PDF.
     """
     chart_path = os.path.join(project_dir, 'capacity_chart.png')
     blueprints = glob.glob(os.path.join(project_dir, 'blueprints', '*.png'))
@@ -69,14 +84,34 @@ def compile_report_pdf(project_dir):
         return
         
     img_list = []
+    gray_list = []
+    
+    gray_blueprints_dir = os.path.join(project_dir, 'blueprints_grayscale')
+    os.makedirs(gray_blueprints_dir, exist_ok=True)
+    
     for fp in images:
         try:
             img = Image.open(fp)
             img_rgb = img.convert('RGB')
             img_list.append(img_rgb)
+            
+            img_gray = img.convert('L')
+            
+            base_name = os.path.basename(fp)
+            if base_name == 'capacity_chart.png':
+                img_gray.save(os.path.join(project_dir, 'capacity_chart_grayscale.png'))
+            else:
+                img_gray.save(os.path.join(gray_blueprints_dir, base_name))
+                
+            gray_list.append(img_gray.convert('RGB'))
+            
         except Exception:
             pass
             
     if img_list:
         out_pdf = os.path.join(project_dir, 'visual_report.pdf')
         img_list[0].save(out_pdf, "PDF", resolution=150.0, save_all=True, append_images=img_list[1:])
+        
+    if gray_list:
+        out_pdf_gray = os.path.join(project_dir, 'visual_report_grayscale.pdf')
+        gray_list[0].save(out_pdf_gray, "PDF", resolution=150.0, save_all=True, append_images=gray_list[1:])
