@@ -122,6 +122,12 @@ def run_estimation(config):
     shopping_list = []
     
     # Process layout algorithm grouping by material
+    # Wipe legacy blueprint caches to prevent orphaned ghost files from compiling into the PDF
+    import shutil
+    blueprints_dir = os.path.join(project_dir, 'blueprints')
+    if os.path.exists(blueprints_dir):
+        shutil.rmtree(blueprints_dir)
+
     materials = parts_df['material'].unique()
     for mat in materials:
         # Gather Parts
@@ -169,7 +175,7 @@ def run_estimation(config):
         
         # Render Blueprint Visualizations
         for pbin in pack_res['packed_bins']:
-            draw_packed_bin(pbin, mat, project_dir)
+            draw_packed_bin(pbin, mat, project_dir, kerf=cut_spacing)
             
         # Collect Unpacked orphans for the dimensional shopping list
         # Instead of just dumping them loosely, we pack them into standard "Virtual Boards" for purchasing
@@ -205,7 +211,7 @@ def run_estimation(config):
                 
                 v_bin = {
                     'id': f"TO_BUY_{virtual_board_idx}",
-                    'label': "To Buy Sheet" if is_sheet else "To Buy Board",
+                    'label': f"To Buy {mat} Sheet {virtual_board_idx}" if is_sheet else f"To Buy {mat} Board {virtual_board_idx}",
                     'width': v_width,
                     'length': v_length,
                     'qty': 1
@@ -217,7 +223,7 @@ def run_estimation(config):
                 packed_pbin = v_pack_res['packed_bins'][0] if v_pack_res['packed_bins'] else None
                 if packed_pbin and packed_pbin['rects']:
                     # Draw a native blueprint showing exactly how to break down the new board you buy
-                    draw_packed_bin(packed_pbin, mat, project_dir)
+                    draw_packed_bin(packed_pbin, mat, project_dir, kerf=cut_spacing)
                     virtual_bins.append({
                         'Material': mat,
                         'Item to Procure': packed_pbin['bin_uid'],
@@ -282,20 +288,36 @@ def run_estimation(config):
                 buy_required = True
                 report_lines.append(f"## {mat_name}")
                 
-                if needs_volume_buy:
-                    report_lines.append(f"- **Total Volume Deficit:** {round(row['To Purchase'], 2)} {row['Unit']}")
-                else:
-                    report_lines.append(f"- **Total Volume Deficit:** 0.0 {row['Unit']} *(On-hand geometry restriction: physical pieces don't fit)*")
+                total_purchase_volume = 0.0
+                mapped_boards = []
                 
                 if not shop_df.empty:
                     mat_shop = shop_df[shop_df['Material'] == mat_name]
-                    if not mat_shop.empty:
-                        report_lines.append("- **Recommended Boards to Pull:**")
-                        for _, board_row in mat_shop.iterrows():
-                            # Map native fraction arrays directly matching tape-measure bounds
-                            w_frac = format_fraction(board_row['Required Width (in)'])
-                            l_frac = format_fraction(board_row['Required Length (in)'])
-                            report_lines.append(f"  - [ ] 1x `{w_frac}\" W  x  {l_frac}\" L`  *(Identifier: {board_row['Item to Procure']})*")
+                    for _, board_row in mat_shop.iterrows():
+                        w = board_row['Required Width (in)']
+                        l = board_row['Required Length (in)']
+                        
+                        if row['Material Type'] == 'Sheet Goods':
+                            vol = calculate_sqft(l, w)
+                        else:
+                            vol = calculate_bf(l, w, thickness_moniker=mat_name)
+                        
+                        total_purchase_volume += vol
+                        
+                        w_frac = format_fraction(w)
+                        l_frac = format_fraction(l)
+                        mapped_boards.append(f"  - [ ] 1x `{w_frac}\" W  x  {l_frac}\" L`  *(Identifier: {board_row['Item to Procure']})*")
+                
+                # Derive final quote mapping
+                display_volume = total_purchase_volume if total_purchase_volume > 0 else row['To Purchase']
+                report_lines.append(f"- **Total Quoted Volume to Buy:** {round(display_volume, 2)} {row['Unit']}")
+                
+                if mapped_boards:
+                    report_lines.append("- **Recommended Boards to Pull:**")
+                    report_lines.extend(mapped_boards)
+                elif needs_physical_buy:
+                    report_lines.append("- *No dimensional layout mapped.*")
+                    
                 report_lines.append("")
                 
         if not buy_required:

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import os
 
-def draw_packed_bin(bin_data, material_name, output_dir):
+def draw_packed_bin(bin_data, material_name, output_dir, kerf=0.125):
     """
     Draws a 2D topographical blueprint of a single material board with its packed cuts.
     """
@@ -33,6 +33,12 @@ def draw_packed_bin(bin_data, material_name, output_dir):
     # Draw Board background
     board = patches.Rectangle((0, 0), bl, bw, linewidth=2, edgecolor=board_edge, facecolor=board_face, alpha=0.5)
     ax.add_patch(board)
+    
+    # Draw unusable waste margin visually (jointing/milling bound)
+    if kerf > 0:
+        margin = patches.Rectangle((kerf, kerf), bl - (2*kerf), bw - (2*kerf), 
+                                   linewidth=1.2, edgecolor='#d9534f', facecolor='none', linestyle='--', alpha=0.8)
+        ax.add_patch(margin)
     
     # Draw cut parts
     for r in rects:
