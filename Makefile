@@ -46,28 +46,4 @@ clean:
 	rm -rf .pytest_cache
 
 clean-outputs:
-	@echo "The following files and directories will be deleted:"
-	@find projects -name "*.pdf" -type f
-	@find projects -name "*.png" -type f
-	@find projects -name "buy_report.md" -type f
-	@find projects -name "estimation_summary.csv" -type f
-	@find projects -name "purchasing_dimensions.csv" -type f
-	@find projects -mindepth 2 -type d -name "blueprints*" 2>/dev/null || true
-	@read -p "Are you sure you want to delete these outputs? [y/N]: " confirm_yn && \
-	if [ "$$confirm_yn" = "y" ] || [ "$$confirm_yn" = "Y" ]; then \
-		read -p "Please type DELETE to confirm: " confirm_del && \
-		if [ "$$confirm_del" = "DELETE" ]; then \
-			echo "Deleting..."; \
-			find projects -name "*.pdf" -type f -delete; \
-			find projects -name "*.png" -type f -delete; \
-			find projects -name "buy_report.md" -type f -delete; \
-			find projects -name "estimation_summary.csv" -type f -delete; \
-			find projects -name "purchasing_dimensions.csv" -type f -delete; \
-			find projects -mindepth 2 -type d -name "blueprints*" -exec rm -rf {} + 2>/dev/null || true; \
-			echo "Done."; \
-		else \
-			echo "Aborted. No files were deleted."; \
-		fi \
-	else \
-		echo "Aborted. No files were deleted."; \
-	fi
+	@$(PYTHON) src/clean_outputs.py
