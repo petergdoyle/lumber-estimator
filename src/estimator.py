@@ -260,4 +260,51 @@ def run_estimation(config):
     out_path = os.path.join(output_dir, 'estimation_summary.csv')
     summary_df.to_csv(out_path, index=False)
     
+    # Generate Unified Buy Report Markdown
+    try:
+        from dimensions import format_fraction
+        report_lines = []
+        
+        fallback_name = os.path.basename(project_dir.rstrip('/'))
+        
+        report_lines.append(f"# Shopping List: {config.get('name', fallback_name).title()}")
+        report_lines.append(f"> Auto-generated dimensional itemized purchasing guide.\n")
+        
+        buy_required = False
+        shop_df = pd.DataFrame(shopping_list) if shopping_list else pd.DataFrame()
+        
+        for _, row in summary_df.iterrows():
+            mat_name = row['Material']
+            needs_volume_buy = row['To Purchase'] > 0.01
+            needs_physical_buy = not shop_df.empty and (mat_name in shop_df['Material'].values)
+            
+            if needs_volume_buy or needs_physical_buy:
+                buy_required = True
+                report_lines.append(f"## {mat_name}")
+                
+                if needs_volume_buy:
+                    report_lines.append(f"- **Total Volume Deficit:** {round(row['To Purchase'], 2)} {row['Unit']}")
+                else:
+                    report_lines.append(f"- **Total Volume Deficit:** 0.0 {row['Unit']} *(On-hand geometry restriction: physical pieces don't fit)*")
+                
+                if not shop_df.empty:
+                    mat_shop = shop_df[shop_df['Material'] == mat_name]
+                    if not mat_shop.empty:
+                        report_lines.append("- **Recommended Boards to Pull:**")
+                        for _, board_row in mat_shop.iterrows():
+                            # Map native fraction arrays directly matching tape-measure bounds
+                            w_frac = format_fraction(board_row['Required Width (in)'])
+                            l_frac = format_fraction(board_row['Required Length (in)'])
+                            report_lines.append(f"  - [ ] 1x `{w_frac}\" W  x  {l_frac}\" L`  *(Identifier: {board_row['Item to Procure']})*")
+                report_lines.append("")
+                
+        if not buy_required:
+            report_lines.append("## Inventory Status: Fully Stocked!")
+            report_lines.append("You have sufficient on-hand inventory to cut all parts without purchasing new material.")
+            
+        with open(os.path.join(project_dir, 'buy_report.md'), 'w') as f:
+            f.write("\n".join(report_lines))
+    except Exception as e:
+        print(f"Warning: Failed to compile Markdown Buy Report - {e}")
+    
     return summary_df

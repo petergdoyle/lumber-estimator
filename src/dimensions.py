@@ -51,3 +51,28 @@ def calculate_sqft(length, width):
     Calculate Square Feet
     """
     return (length * width) / 144.0
+
+def format_fraction(val, max_denominator=64):
+    """
+    Convert a floating point dimension natively into a fractional string capped at 1/64 rounding logic.
+    """
+    import math
+    from fractions import Fraction
+    
+    if val is None or math.isnan(val) or val == 0:
+        return "0"
+        
+    # Round mathematically to the closest 1/max_denominator resolution limit
+    rounded_val = round(val * max_denominator) / max_denominator
+    
+    whole = int(rounded_val)
+    frac_part = rounded_val - whole
+    
+    if frac_part == 0:
+        return str(whole)
+        
+    f = Fraction(frac_part).limit_denominator(max_denominator)
+    if whole == 0:
+        return f"{f.numerator}/{f.denominator}"
+    else:
+        return f"{whole} {f.numerator}/{f.denominator}"

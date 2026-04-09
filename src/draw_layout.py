@@ -45,8 +45,13 @@ def draw_packed_bin(bin_data, material_name, output_dir):
         part_patch = patches.Rectangle((px, py), pl, pw, linewidth=1.5, edgecolor=part_edge, facecolor=part_face, alpha=0.9)
         ax.add_patch(part_patch)
         
-        # Add bounding label inside
-        ax.text(px + pl/2, py + pw/2, r['id'], ha='center', va='center', fontsize=9, color='white', weight='bold')
+        # Add fractional bounding label inside natively
+        from dimensions import format_fraction
+        pl_frac = format_fraction(pl)
+        pw_frac = format_fraction(pw)
+        
+        label_text = f"{r['id']}\n({pl_frac}\" x {pw_frac}\")"
+        ax.text(px + pl/2, py + pw/2, label_text, ha='center', va='center', fontsize=9, color='white', weight='bold')
 
     plt.title(f"Cut List: {material_name} - Board {bin_uid} ({bw}\" Wide x {bl}\" Long)", fontsize=14, pad=15)
     plt.xlabel("Length Axis (inches)", fontsize=11)
