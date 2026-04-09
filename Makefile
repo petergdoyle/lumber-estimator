@@ -15,6 +15,7 @@ help:
 	@echo "  make test         - Run tests"
 	@echo "  make clean        - Clean virtual environment and caches"
 	@echo "  make clean-outputs- Clean generated project artifacts (PDFs, images, etc.)"
+	@echo "  make new-project  - Interactively create a new project folder and config"
 	@echo "\nAvailable projects:"
 	@for p in $(PROJECTS); do \
 		echo "  make project-$$p"; \
@@ -22,6 +23,9 @@ help:
 
 $(PROJECT_TARGETS): project-%:
 	$(PYTHON) src/main.py $*
+
+new-project:
+	@$(PYTHON) src/create_project.py
 
 setup:
 	python3 -m venv $(VENV)
