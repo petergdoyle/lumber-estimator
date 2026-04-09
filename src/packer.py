@@ -34,7 +34,7 @@ def pack_material(parts, bins, kerf=0.125, allow_rotation=False):
     # Add Parts (Requirements)
     all_parts = []
     part_lookup = {}
-    for p in parts:
+    for p_idx, p in enumerate(parts):
         for i in range(int(p.get('qty', 1))):
             pw = int((p['width'] + kerf) * SCALE)
             pl = int((p['length'] + kerf) * SCALE)
@@ -43,7 +43,7 @@ def pack_material(parts, bins, kerf=0.125, allow_rotation=False):
             desc = str(p.get('desc', p['id']))
             # Avoid overly long strings 
             desc_short = desc[:15]
-            part_uid = f"{desc_short}_{i+1}"
+            part_uid = p.get('uid', f"{desc_short}_{p_idx}_{i+1}")
             
             part_lookup[part_uid] = p
             packer.add_rect(pw, pl, rid=part_uid)

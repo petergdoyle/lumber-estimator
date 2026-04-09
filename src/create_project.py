@@ -102,6 +102,25 @@ def main():
                 writer.writerow([desc, length, width, qty, mat_type, m_name])
                 print(f"Added {qty}x {desc}.")
 
+    add_inv = input("\nWould you like to interactively add some on-hand inventory now? (y/N): ").strip().lower()
+    if add_inv == 'y':
+        print("\nEntering interactive mode. Type 'done' or leave Label empty to finish.")
+        with open(inventory_path, 'a', newline='') as f:
+            writer = csv.writer(f)
+            while True:
+                print("-" * 30)
+                label = input("Label (e.g., Board A): ").strip()
+                if not label or label.lower() == 'done':
+                    break
+                length = input("Length (in): ").strip()
+                width = input("Width (in): ").strip()
+                qty = input_with_default("Quantity", "1")
+                mat_type = input_with_default("Material Type (Lumber / Sheet Goods)", "Lumber")
+                m_name = input("Material Name (e.g., 4/4 Cherry): ").strip()
+                
+                writer.writerow([label, length, width, qty, mat_type, m_name])
+                print(f"Added {qty}x {label} to inventory.")
+
     print("="*50)
     print(f"Success! Project '{project_name}' is ready to go.")
     print(f"You can open '{project_dir}/parts.csv' to enter components.")
