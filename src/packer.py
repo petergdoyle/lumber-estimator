@@ -1,8 +1,8 @@
 from rectpack import newPacker, PackingMode, PackingBin, SORT_AREA
 
-def pack_material(parts, bins, kerf=0.125):
+def pack_material(parts, bins, kerf=0.125, allow_rotation=False):
     """
-    Executes a 2D bin packing algorithm without rotation (grain alignment enforced).
+    Executes a 2D bin packing algorithm, allowing rotation only for specified material types (like MDF).
     
     parts: list of dicts {'id': str, 'desc': str, 'width': float, 'length': float, 'qty': int}
     bins: list of dicts {'id': str, 'label': str, 'width': float, 'length': float, 'qty': int}
@@ -10,8 +10,8 @@ def pack_material(parts, bins, kerf=0.125):
     # Integer multiplication maintains perfect precision in rectpack (ignoring weird float limits)
     SCALE = 1000
     
-    # We strictly enforce rotation=False for solid wood to preserve grain direction
-    packer = newPacker(mode=PackingMode.Offline, bin_algo=PackingBin.BFF, rotation=False)
+    # We natively pass allow_rotation through bridging the configuration block
+    packer = newPacker(mode=PackingMode.Offline, bin_algo=PackingBin.BFF, rotation=allow_rotation)
     
     # Add Bins (Inventory)
     bin_lookup = {}

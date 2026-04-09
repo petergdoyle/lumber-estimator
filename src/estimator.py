@@ -161,8 +161,11 @@ def run_estimation(config):
         # Pull cut spacing (kerf) natively from config or default to 0.125
         cut_spacing = config.get('waste_allowances', {}).get('cut_spacing', 0.125)
         
-        # Execute Pack
-        pack_res = pack_material(parts_list, bins_list, kerf=cut_spacing)
+        # Execute Primary Pack extracting the rotation constraint natively from the YAML settings
+        rotatable_list = config.get('rotatable_materials', [])
+        allow_mat_rotation = any(r_type.lower() in mat.lower() for r_type in rotatable_list)
+        
+        pack_res = pack_material(parts_list, bins_list, kerf=cut_spacing, allow_rotation=allow_mat_rotation)
         
         # Render Blueprint Visualizations
         for pbin in pack_res['packed_bins']:
@@ -209,7 +212,7 @@ def run_estimation(config):
                 }
                 
                 # Attempt to pack the leftovers into this single phantom board
-                v_pack_res = pack_material(curr_parts_for_virtual, [v_bin], kerf=cut_spacing)
+                v_pack_res = pack_material(curr_parts_for_virtual, [v_bin], kerf=cut_spacing, allow_rotation=allow_mat_rotation)
                 
                 packed_pbin = v_pack_res['packed_bins'][0] if v_pack_res['packed_bins'] else None
                 if packed_pbin and packed_pbin['rects']:

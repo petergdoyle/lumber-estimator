@@ -7,3 +7,7 @@ project:
     lumber: 0.30
     sheet_goods: 0.20
     cut_spacing: 0.375
+  rotatable_materials:
+    - "MDF"
+    - "Melamine"
+    - "OSB"
