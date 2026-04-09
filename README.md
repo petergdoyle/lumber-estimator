@@ -46,3 +46,9 @@ To see a list of all your available dynamically-detected projects, run:
 ```bash
 make help
 ```
+
+To safely clean up generated outputs (like PDFs, images, and purchasing CSVs) from your projects, run:
+```bash
+make clean-outputs
+```
+> **Note**: This cleanup is interactive and strictly safe. It will prompt you to either select a specific project or all projects, lists exactly what is going to be deleted, and requires a two-step `y/N` and `DELETE` type-out verification. It **only** deletes generated output files; your `project.yaml`, `parts.csv`, and any other source inputs are always preserved.
