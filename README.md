@@ -30,6 +30,11 @@ Inside a specific project folder (e.g., `projects/sample-dresser/`):
 
 ## Usage
 
+To create a new project with an interactive setup wizard (which creates the directory, configuration, and CSV templates), run:
+```bash
+make new-project
+```
+
 You execute the estimation engine by targeting a specific project directory using the Makefile:
 
 ```bash
