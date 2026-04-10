@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import os
@@ -52,7 +54,7 @@ def draw_packed_bin(bin_data, material_name, output_dir, kerf=0.125):
         ax.add_patch(part_patch)
         
         # Add fractional bounding label inside natively
-        from dimensions import format_fraction
+        from src.lumber_estimator.core.dimensions import format_fraction
         pl_frac = format_fraction(pl)
         pw_frac = format_fraction(pw)
         

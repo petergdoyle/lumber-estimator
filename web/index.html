@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumber Estimator | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">🪵</span>
+                <h1>Lumber <span>Estimator</span></h1>
+            </div>
+            <div class="header-actions">
+                <button id="refresh-projects" class="btn-secondary">Refresh Projects</button>
+            </div>
+        </header>
+
+        <main>
+            <section class="projects-section">
+                <div class="section-header">
+                    <h2>Your Projects</h2>
+                    <p>Select a project to run estimations and view reports.</p>
+                </div>
+                <div id="project-grid" class="project-grid">
+                    <!-- Projects will be loaded here -->
+                    <div class="loader-container">
+                        <div class="loader"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="details-section" class="details-section hidden">
+                <div class="details-card">
+                    <div class="details-header">
+                        <h2 id="selected-project-name">Project Details</h2>
+                        <div class="details-actions">
+                            <button id="run-estimate" class="btn-primary">Run Estimation</button>
+                            <button id="close-details" class="btn-icon">×</button>
+                        </div>
+                    </div>
+                    
+                    <div class="details-content">
+                        <div class="tabs">
+                            <button class="tab-btn active" data-tab="summary">Summary</button>
+                            <button class="tab-btn" data-tab="config">Configuration</button>
+                        </div>
+                        
+                        <div class="tab-content active" id="tab-summary">
+                            <div id="estimation-results" class="results-table-container">
+                                <p class="placeholder-text">Run estimation to see results here.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="tab-config">
+                            <pre id="config-viewer" class="code-block"></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Lumber Estimator Pro. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

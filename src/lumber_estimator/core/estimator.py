@@ -1,10 +1,10 @@
 import pandas as pd
 import os
 import re
-from config import load_project_config
-from dimensions import parse_fraction, calculate_bf, calculate_sqft
-from packer import pack_material
-from draw_layout import draw_packed_bin
+from src.lumber_estimator.core.config import load_project_config
+from src.lumber_estimator.core.dimensions import parse_fraction, calculate_bf, calculate_sqft
+from src.lumber_estimator.core.packer import pack_material
+from src.lumber_estimator.core.draw_layout import draw_packed_bin
 
 def extract_thickness(mat):
     mat = str(mat)
@@ -37,15 +37,24 @@ def run_estimation(config):
     
     # Process required dimensions
     parts_df = parts_df.dropna(subset=['length', 'width', 'material'])
-    parts_df['material'] = parts_df['material'].apply(clean_material_name)
-    parts_df['length_val'] = parts_df['length'].apply(parse_fraction)
-    parts_df['width_val'] = parts_df['width'].apply(parse_fraction)
-    parts_df['qty'] = pd.to_numeric(parts_df.get('quantity', 1.0), errors='coerce').fillna(1.0)
-    parts_df['thickness'] = parts_df['material'].apply(extract_thickness)
-    
-    # Calculate Base BF/SQFT
-    parts_df['bf'] = parts_df.apply(lambda r: calculate_bf(r['length_val'], r['width_val'], r['thickness']) * r['qty'], axis=1)
-    parts_df['sqft'] = parts_df.apply(lambda r: calculate_sqft(r['length_val'], r['width_val']) * r['qty'], axis=1)
+    if not parts_df.empty:
+        parts_df['material'] = parts_df['material'].apply(clean_material_name)
+        parts_df['length_val'] = parts_df['length'].apply(parse_fraction)
+        parts_df['width_val'] = parts_df['width'].apply(parse_fraction)
+        parts_df['qty'] = pd.to_numeric(parts_df.get('quantity', 1.0), errors='coerce').fillna(1.0)
+        parts_df['thickness'] = parts_df['material'].apply(extract_thickness)
+        
+        # Calculate Base BF/SQFT
+        parts_df['bf'] = parts_df.apply(lambda r: calculate_bf(r['length_val'], r['width_val'], r['thickness']) * r['qty'], axis=1)
+        parts_df['sqft'] = parts_df.apply(lambda r: calculate_sqft(r['length_val'], r['width_val']) * r['qty'], axis=1)
+    else:
+        parts_df['material'] = pd.Series(dtype=str)
+        parts_df['length_val'] = pd.Series(dtype=float)
+        parts_df['width_val'] = pd.Series(dtype=float)
+        parts_df['qty'] = pd.Series(dtype=float)
+        parts_df['thickness'] = pd.Series(dtype=str)
+        parts_df['bf'] = pd.Series(dtype=float)
+        parts_df['sqft'] = pd.Series(dtype=float)
     
     # Group totals
     raw_totals = parts_df.groupby(['material_type', 'material'])[['bf', 'sqft']].sum().reset_index()
@@ -70,14 +79,23 @@ def run_estimation(config):
         inv_df.columns = [c.strip().lower().replace(' ', '_') for c in inv_df.columns]
         if not inv_df.empty:
             inv_df = inv_df.dropna(subset=['length', 'width', 'material'])
-            inv_df['material'] = inv_df['material'].apply(clean_material_name)
-            inv_df['length_val'] = inv_df['length'].apply(parse_fraction)
-            inv_df['width_val'] = inv_df['width'].apply(parse_fraction)
-            inv_df['qty'] = pd.to_numeric(inv_df.get('quantity', 1.0), errors='coerce').fillna(1.0)
-            inv_df['thickness'] = inv_df['material'].apply(extract_thickness)
-            
-            inv_df['bf'] = inv_df.apply(lambda r: calculate_bf(r['length_val'], r['width_val'], r['thickness']) * r['qty'], axis=1)
-            inv_df['sqft'] = inv_df.apply(lambda r: calculate_sqft(r['length_val'], r['width_val']) * r['qty'], axis=1)
+            if not inv_df.empty:
+                inv_df['material'] = inv_df['material'].apply(clean_material_name)
+                inv_df['length_val'] = inv_df['length'].apply(parse_fraction)
+                inv_df['width_val'] = inv_df['width'].apply(parse_fraction)
+                inv_df['qty'] = pd.to_numeric(inv_df.get('quantity', 1.0), errors='coerce').fillna(1.0)
+                inv_df['thickness'] = inv_df['material'].apply(extract_thickness)
+                
+                inv_df['bf'] = inv_df.apply(lambda r: calculate_bf(r['length_val'], r['width_val'], r['thickness']) * r['qty'], axis=1)
+                inv_df['sqft'] = inv_df.apply(lambda r: calculate_sqft(r['length_val'], r['width_val']) * r['qty'], axis=1)
+            else:
+                inv_df['material'] = pd.Series(dtype=str)
+                inv_df['length_val'] = pd.Series(dtype=float)
+                inv_df['width_val'] = pd.Series(dtype=float)
+                inv_df['qty'] = pd.Series(dtype=float)
+                inv_df['thickness'] = pd.Series(dtype=str)
+                inv_df['bf'] = pd.Series(dtype=float)
+                inv_df['sqft'] = pd.Series(dtype=float)
             
             inv_totals = inv_df.groupby(['material_type', 'material'])[['bf', 'sqft']].sum().reset_index()
             for _, r in inv_totals.iterrows():
@@ -268,7 +286,7 @@ def run_estimation(config):
     
     # Generate Unified Buy Report Markdown
     try:
-        from dimensions import format_fraction
+        from src.lumber_estimator.core.dimensions import format_fraction
         report_lines = []
         
         fallback_name = os.path.basename(project_dir.rstrip('/'))

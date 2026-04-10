@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  estimator-web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./projects:/app/projects
+      # Optional: mount src for hot-reloading in dev if using --reload
+      # - ./src:/app/src
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

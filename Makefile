@@ -22,10 +22,10 @@ help:
 	done
 
 $(PROJECT_TARGETS): project-%:
-	$(PYTHON) src/main.py $*
+	$(PYTHON) -m src.lumber_estimator.cli.main $*
 
 new-project:
-	@$(PYTHON) src/create_project.py
+	@$(PYTHON) -m src.lumber_estimator.cli.create_project
 
 setup:
 	python3 -m venv $(VENV)
@@ -35,7 +35,7 @@ setup:
 	touch projects/.gitkeep
 
 run:
-	$(PYTHON) src/main.py
+	$(PYTHON) -m src.lumber_estimator.cli.main
 
 test:
 	$(PYTHON) -m pytest
@@ -46,4 +46,13 @@ clean:
 	rm -rf .pytest_cache
 
 clean-outputs:
-	@$(PYTHON) src/clean_outputs.py
+	@$(PYTHON) -m src.lumber_estimator.cli.clean_outputs
+
+docker-build:
+	docker-compose build
+
+docker-up:
+	docker-compose up -d
+
+serve:
+	$(VENV)/bin/uvicorn src.lumber_estimator.web.server:app --reload

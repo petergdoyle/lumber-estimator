@@ -5,3 +5,5 @@ matplotlib
 seaborn
 rectpack
 markdown-pdf
+fastapi
+uvicorn

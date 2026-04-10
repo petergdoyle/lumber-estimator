@@ -1,9 +1,9 @@
 import os
 import argparse
 import sys
-from config import load_project_config
-from estimator import run_estimation
-from visualize import generate_volume_chart
+from src.lumber_estimator.core.config import load_project_config
+from src.lumber_estimator.core.estimator import run_estimation
+from src.lumber_estimator.core.visualize import generate_volume_chart
 
 def main():
     parser = argparse.ArgumentParser(description="Lumber Estimator")
@@ -49,7 +49,7 @@ def main():
         generate_volume_chart(summary, project_dir)
         
         # Compile everything into a PDF
-        from visualize import compile_report_pdf, generate_buy_report_pdf
+        from src.lumber_estimator.core.visualize import compile_report_pdf, generate_buy_report_pdf
         compile_report_pdf(project_dir)
         generate_buy_report_pdf(project_dir)
         
