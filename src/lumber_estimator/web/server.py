@@ -58,6 +58,31 @@ def estimate_project(project_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/projects/{project_id}/download/{report_type}")
+def download_report(project_id: str, report_type: str):
+    base_dir = "projects"
+    project_dir = os.path.join(base_dir, project_id)
+    
+    mapping = {
+        "color": "visual_report.pdf",
+        "grayscale": "visual_report_grayscale.pdf",
+        "buy": "buy_report.pdf"
+    }
+    
+    if report_type not in mapping:
+        raise HTTPException(status_code=400, detail="Invalid report type. Use 'color', 'grayscale', or 'buy'.")
+    
+    file_path = os.path.join(project_dir, mapping[report_type])
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail=f"Report file not found: {mapping[report_type]}")
+        
+    return FileResponse(
+        path=file_path,
+        media_type='application/pdf',
+        filename=mapping[report_type]
+    )
+
 @app.get("/")
 def read_root():
     return {"message": "Lumber Estimator API is running. Visit /ui for the interface."}

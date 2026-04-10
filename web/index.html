@@ -55,6 +55,27 @@
                             <div id="estimation-results" class="results-table-container">
                                 <p class="placeholder-text">Run estimation to see results here.</p>
                             </div>
+                            <div id="download-controls" class="download-container hidden">
+                                <h3>Download Reports</h3>
+                                <div class="download-options">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="dl-color" checked>
+                                        <span class="checkmark"></span>
+                                        Color Visual Report
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="dl-grayscale">
+                                        <span class="checkmark"></span>
+                                        Grayscale Visual Report
+                                    </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="dl-buy" checked>
+                                        <span class="checkmark"></span>
+                                        Buy Report (PDF)
+                                    </label>
+                                </div>
+                                <button id="download-reports" class="btn-primary">Download Selected PDFs</button>
+                            </div>
                         </div>
                         
                         <div class="tab-content" id="tab-config">

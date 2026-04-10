@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const projectNameEl = document.getElementById('selected-project-name');
     const configViewer = document.getElementById('config-viewer');
     const estimationResults = document.getElementById('estimation-results');
+    const downloadControls = document.getElementById('download-controls');
+    const downloadBtn = document.getElementById('download-reports');
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
     const toast = document.getElementById('toast');
@@ -77,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             renderEstimationResults(data);
+            downloadControls.classList.remove('hidden');
             showToast('Estimation completed successfully!');
         } catch (error) {
             showToast('Error running estimation: ' + error.message, 'error');
@@ -117,6 +120,34 @@ document.addEventListener('DOMContentLoaded', () => {
         estimationResults.innerHTML = tableHtml;
     }
 
+    // Download logic
+    function downloadReports() {
+        const types = [
+            { id: 'dl-color', type: 'color' },
+            { id: 'dl-grayscale', type: 'grayscale' },
+            { id: 'dl-buy', type: 'buy' }
+        ];
+
+        const selected = types.filter(t => document.getElementById(t.id).checked);
+
+        if (selected.length === 0) {
+            showToast('Please select at least one report to download.', 'error');
+            return;
+        }
+
+        selected.forEach((s, index) => {
+            // Use a slight delay between downloads to ensure the browser handles multiple files
+            setTimeout(() => {
+                const link = document.createElement('a');
+                link.href = `/api/projects/${currentProject}/download/${s.type}`;
+                link.download = ''; // Let the server headers decide the filename
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }, index * 500);
+        });
+    }
+
     // UI Helpers
     function showToast(message, type = 'success') {
         toast.textContent = message;
@@ -130,8 +161,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event Listeners
     refreshBtn.onclick = loadProjects;
-    closeDetailsBtn.onclick = () => detailsSection.classList.add('hidden');
+    closeDetailsBtn.onclick = () => {
+        detailsSection.classList.add('hidden');
+        downloadControls.classList.add('hidden');
+    };
     runEstimateBtn.onclick = runEstimate;
+    downloadBtn.onclick = downloadReports;
 
     tabBtns.forEach(btn => {
         btn.onclick = () => {
