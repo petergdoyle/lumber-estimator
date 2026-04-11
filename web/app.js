@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const estimationResults = document.getElementById('estimation-results');
     const downloadControls = document.getElementById('download-controls');
     const downloadBtn = document.getElementById('download-reports');
+    const newProjectBtn = document.getElementById('open-new-project');
+    const newProjectModal = document.getElementById('new-project-modal');
+    const closeNewProjectBtn = document.getElementById('close-new-project');
+    const newProjectForm = document.getElementById('new-project-form');
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
     const toast = document.getElementById('toast');
@@ -148,6 +152,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // New Project Logic
+    async function submitNewProject(e) {
+        e.preventDefault();
+        const submitBtn = newProjectForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating...';
+        
+        try {
+            const formData = new FormData(newProjectForm);
+            const response = await fetch('/api/projects', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.detail || 'Failed to create project');
+            }
+            
+            showToast('Project created successfully!');
+            newProjectModal.classList.add('hidden');
+            newProjectForm.reset();
+            loadProjects();
+        } catch (error) {
+            showToast(error.message, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    }
+
     // UI Helpers
     function showToast(message, type = 'success') {
         toast.textContent = message;
@@ -167,7 +205,21 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     runEstimateBtn.onclick = runEstimate;
     downloadBtn.onclick = downloadReports;
+    newProjectBtn.onclick = () => newProjectModal.classList.remove('hidden');
+    closeNewProjectBtn.onclick = () => {
+        newProjectModal.classList.add('hidden');
+        newProjectForm.reset();
+    };
+    newProjectForm.onsubmit = submitNewProject;
 
+    // Close modal on outside click
+    window.onclick = (event) => {
+        if (event.target === newProjectModal) {
+            newProjectModal.classList.add('hidden');
+            newProjectForm.reset();
+        }
+    };
+    // Tab Switching Logic
     tabBtns.forEach(btn => {
         btn.onclick = () => {
             const tabId = btn.getAttribute('data-tab');

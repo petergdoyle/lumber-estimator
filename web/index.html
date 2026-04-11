@@ -17,6 +17,7 @@
                 <h1>Lumber <span>Estimator</span></h1>
             </div>
             <div class="header-actions">
+                <button id="open-new-project" class="btn-secondary">+ New Project</button>
                 <button id="refresh-projects" class="btn-secondary">Refresh Projects</button>
             </div>
         </header>
@@ -89,6 +90,60 @@
         <footer>
             <p>&copy; 2026 Lumber Estimator Pro. All rights reserved.</p>
         </footer>
+    </div>
+
+    <!-- New Project Modal -->
+    <div id="new-project-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Create New Project</h2>
+                <button id="close-new-project" class="btn-icon">×</button>
+            </div>
+            <form id="new-project-form" class="modal-form">
+                <div class="form-group">
+                    <label for="p-name">Project Name</label>
+                    <input type="text" id="p-name" name="name" required placeholder="e.g. Workshop Workbench">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="p-waste-lumber">Waste (Lumber)</label>
+                        <input type="number" id="p-waste-lumber" name="waste_lumber" step="0.05" value="0.30">
+                    </div>
+                    <div class="form-group">
+                        <label for="p-waste-sheet">Waste (Sheet)</label>
+                        <input type="number" id="p-waste-sheet" name="waste_sheet" step="0.05" value="0.20">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="p-kerf">Blade Kerf (in)</label>
+                        <input type="number" id="p-kerf" name="cut_spacing" step="0.001" value="0.125">
+                    </div>
+                    <div class="form-group">
+                        <label for="p-rotatables">Grain-less Materials</label>
+                        <input type="text" id="p-rotatables" name="rotatable_materials" value="MDF, Melamine, OSB">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Initial Data (Optional)</h3>
+                    <div class="form-group">
+                        <label for="p-parts">Parts CSV</label>
+                        <input type="file" id="p-parts" name="parts_file" accept=".csv">
+                    </div>
+                    <div class="form-group">
+                        <label for="p-inventory">Inventory CSV</label>
+                        <input type="file" id="p-inventory" name="inventory_file" accept=".csv">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn-primary w-100">Create Project</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Notification Toast -->

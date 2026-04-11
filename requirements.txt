@@ -7,3 +7,4 @@ rectpack
 markdown-pdf
 fastapi
 uvicorn
+python-multipart

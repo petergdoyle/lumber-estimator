@@ -29,10 +29,11 @@ def run_estimation(config):
     else:
         inventory_path = None
     
-    if not os.path.exists(parts_path):
-        raise FileNotFoundError(f"Parts file not found: {parts_path}")
-        
-    parts_df = pd.read_csv(parts_path)
+    if not os.path.exists(parts_path) or os.path.getsize(parts_path) == 0:
+        parts_df = pd.DataFrame(columns=['description', 'length', 'width', 'quantity', 'material_type', 'material'])
+    else:
+        parts_df = pd.read_csv(parts_path)
+    
     parts_df.columns = [c.strip().lower().replace(' ', '_') for c in parts_df.columns]
     
     # Process required dimensions
