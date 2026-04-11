@@ -17,6 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabContents = document.querySelectorAll('.tab-content');
     const toast = document.getElementById('toast');
 
+    // Confirm Modal Elements
+    const confirmModal = document.getElementById('confirm-modal');
+    const confirmTitle = document.getElementById('confirm-title');
+    const confirmMessage = document.getElementById('confirm-message');
+    const confirmProceedBtn = document.getElementById('confirm-proceed');
+    const confirmCancelBtn = document.getElementById('confirm-cancel');
+    const closeConfirmBtn = document.getElementById('close-confirm');
+
     let currentProject = null;
 
     // Fetch and display projects
@@ -36,10 +44,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = document.createElement('div');
                 card.className = 'project-card';
                 card.innerHTML = `
-                    <h3>${project.name}</h3>
+                    <div class="project-card-header">
+                        <h3>${project.name}</h3>
+                        <button class="btn-archive" title="Archive Project">📦</button>
+                    </div>
                     <p class="material-count">ID: ${project.id}</p>
                 `;
                 card.onclick = () => showProjectDetails(project.id);
+                
+                const archiveBtn = card.querySelector('.btn-archive');
+                archiveBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    archiveProject(project.id);
+                });
+                
                 projectGrid.appendChild(card);
             });
         } catch (error) {
@@ -150,6 +169,85 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(link);
             }, index * 500);
         });
+    }
+
+    // Custom Confirmation Modal Helper
+    function showConfirmModal(options) {
+        return new Promise((resolve) => {
+            const { title, message, confirmText, isDanger } = options;
+            
+            confirmTitle.textContent = title || 'Confirm Action';
+            confirmMessage.textContent = message || 'Are you sure?';
+            confirmProceedBtn.textContent = confirmText || 'Confirm';
+            
+            if (isDanger) {
+                confirmProceedBtn.classList.add('btn-danger');
+            } else {
+                confirmProceedBtn.classList.remove('btn-danger');
+            }
+            
+            confirmModal.classList.remove('hidden');
+            
+            const cleanup = () => {
+                confirmModal.classList.add('hidden');
+                confirmProceedBtn.onclick = null;
+                confirmCancelBtn.onclick = null;
+                closeConfirmBtn.onclick = null;
+                confirmModal.onclick = null;
+            };
+            
+            confirmProceedBtn.onclick = () => {
+                cleanup();
+                resolve(true);
+            };
+            
+            const cancel = () => {
+                cleanup();
+                resolve(false);
+            };
+            
+            confirmCancelBtn.onclick = cancel;
+            closeConfirmBtn.onclick = cancel;
+            confirmModal.onclick = (e) => {
+                if (e.target === confirmModal) cancel();
+            };
+        });
+    }
+
+    // Archive Project
+    async function archiveProject(projectId) {
+        const confirmed = await showConfirmModal({
+            title: 'Archive Project',
+            message: `Are you sure you want to archive project "${projectId}"? This will compress the project and remove it from the active list.`,
+            confirmText: 'Archive Project',
+            isDanger: true
+        });
+
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/api/projects/${projectId}/archive`, {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.detail || 'Failed to archive project');
+            }
+
+            showToast('Project archived successfully!');
+            loadProjects();
+            
+            // Close details if the archived project was open
+            if (currentProject === projectId) {
+                detailsSection.classList.add('hidden');
+                downloadControls.classList.add('hidden');
+                currentProject = null;
+            }
+        } catch (error) {
+            showToast('Error archiving project: ' + error.message, 'error');
+        }
     }
 
     // New Project Logic

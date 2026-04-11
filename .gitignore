@@ -11,6 +11,8 @@ env/
 projects/*
 !projects/sample-*/
 !projects/.gitkeep
+archives/*
+!archives/.gitkeep
 *.log
 
 # IDEs

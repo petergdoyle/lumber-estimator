@@ -8,6 +8,8 @@ import shutil
 import csv
 import yaml
 import re
+import tarfile
+from datetime import datetime
 
 from src.lumber_estimator.core.config import load_project_config
 from src.lumber_estimator.core.estimator import run_estimation
@@ -97,6 +99,41 @@ def get_project_details(project_id: str):
         return config
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@app.post("/api/projects/{project_id}/archive")
+def archive_project(project_id: str):
+    base_dir = "projects"
+    archive_dir = "archives"
+    project_path = os.path.join(base_dir, project_id)
+    
+    if not os.path.exists(project_path):
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+        
+    try:
+        # Ensure archives directory exists
+        os.makedirs(archive_dir, exist_ok=True)
+        
+        # Generate archive filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        archive_filename = f"{project_id}_{timestamp}.tar.bz2"
+        archive_path = os.path.join(archive_dir, archive_filename)
+        
+        # Create tar.bz2 archive
+        with tarfile.open(archive_path, "w:bz2") as tar:
+            tar.add(project_path, arcname=project_id)
+            
+        # Verify archive was created before deleting original
+        if os.path.exists(archive_path):
+            shutil.rmtree(project_path)
+        else:
+            raise Exception("Failed to create archive file.")
+            
+        return {"status": "success", "message": f"Project '{project_id}' archived as {archive_filename}"}
+    except Exception as e:
+        # Cleanup partial archive if it exists
+        if 'archive_path' in locals() and os.path.exists(archive_path):
+            os.remove(archive_path)
+        raise HTTPException(status_code=500, detail=f"Archival failed: {str(e)}")
 
 @app.post("/api/projects/{project_id}/estimate")
 def estimate_project(project_id: str):

@@ -159,6 +159,32 @@ header {
     color: var(--text-muted);
 }
 
+.project-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.btn-archive {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: var(--transition);
+    opacity: 0.6;
+    margin-top: -4px;
+}
+
+.btn-archive:hover {
+    color: var(--error);
+    background-color: rgba(248, 81, 73, 0.1);
+    opacity: 1;
+}
+
 /* Details Section */
 .details-section {
     position: fixed;
@@ -376,6 +402,35 @@ tr:last-child td {
 
 .w-100 {
     width: 100%;
+}
+
+.small-modal {
+    max-width: 400px;
+}
+
+.modal-body {
+    margin-bottom: 24px;
+}
+
+.modal-body p {
+    color: var(--text-muted);
+}
+
+.flex-row {
+    display: flex;
+    gap: 12px;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.btn-danger {
+    background-color: var(--error);
+}
+
+.btn-danger:hover {
+    background-color: #ff6a62;
 }
 
 /* Loader */
