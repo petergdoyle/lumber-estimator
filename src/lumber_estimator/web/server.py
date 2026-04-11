@@ -20,6 +20,44 @@ def kebab_case(string):
     string = re.sub(r'[\s_]+', '-', string)
     string = re.sub(r'[^a-z0-9\-]', '', string)
     return string.strip('-')
+    
+def validate_csv_headers(file: UploadFile, expected_headers: List[str]):
+    """
+    Validates that the upload has the correct headers and all rows have the same column count.
+    """
+    try:
+        # Read the file content
+        content = file.file.read().decode('utf-8').splitlines()
+        file.file.seek(0) # Reset file pointer for later reading/saving
+        
+        if not content:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+            
+        reader = csv.reader(content)
+        headers = next(reader, None)
+        
+        if not headers:
+            raise HTTPException(status_code=400, detail="Uploaded file has no headers.")
+            
+        # Clean headers
+        headers = [h.strip() for h in headers]
+        expected_headers = [h.strip() for h in expected_headers]
+        
+        if headers != expected_headers:
+            raise HTTPException(status_code=400, detail=f"Invalid CSV headers. Expected: {', '.join(expected_headers)}")
+            
+        # Validate row alignment
+        expected_col_count = len(expected_headers)
+        for i, row in enumerate(reader, start=2):
+            if len(row) != expected_col_count:
+                raise HTTPException(status_code=400, detail=f"Row {i} in CSV has mismatched column count. Expected {expected_col_count}, got {len(row)}.")
+                
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid file encoding. Please upload a standard UTF-8 CSV.")
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=400, detail=f"CSV validation error: {str(e)}")
 
 # Mount early so it doesn't interfere with API routes
 # We will create the 'web' directory at the root
@@ -112,6 +150,12 @@ async def create_project(
     parts_file: Optional[UploadFile] = File(None),
     inventory_file: Optional[UploadFile] = File(None)
 ):
+    # Move validation to the TOP before any side effects
+    if parts_file and parts_file.filename:
+        validate_csv_headers(parts_file, ['Description', 'Length', 'Width', 'Quantity', 'Material Type', 'Material'])
+    if inventory_file and inventory_file.filename:
+        validate_csv_headers(inventory_file, ['Label', 'Length', 'Width', 'Quantity', 'Material Type', 'Material'])
+
     try:
         folder_name = kebab_case(name)
         project_dir = os.path.join("projects", folder_name)
@@ -130,7 +174,7 @@ async def create_project(
                 'name': name,
                 'files': {
                     'parts': 'parts.csv',
-                    'inventory': 'on-hand.csv'
+                    'inventory': 'inventory.csv'
                 },
                 'waste_allowances': {
                     'lumber': float(waste_lumber),
@@ -156,7 +200,7 @@ async def create_project(
                 writer.writerow(['Description', 'Length', 'Width', 'Quantity', 'Material Type', 'Material'])
                 
         # Handle Inventory CSV
-        inventory_path = os.path.join(project_dir, 'on-hand.csv')
+        inventory_path = os.path.join(project_dir, 'inventory.csv')
         if inventory_file and inventory_file.filename:
             with open(inventory_path, 'wb') as f:
                 shutil.copyfileobj(inventory_file.file, f)

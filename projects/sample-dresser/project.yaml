@@ -2,7 +2,7 @@ project:
   name: "Sample Dresser"
   files:
     parts: "parts.csv"
-    inventory: "on-hand.csv"
+    inventory: "inventory.csv"
   waste_allowances:
     lumber: 0.30
     sheet_goods: 0.20

@@ -50,7 +50,7 @@ def main():
             'name': project_name,
             'files': {
                 'parts': 'parts.csv',
-                'inventory': 'on-hand.csv'
+                'inventory': 'inventory.csv'
             },
             'waste_allowances': {
                 'lumber': float(waste_lumber),
@@ -74,12 +74,12 @@ def main():
         writer.writerow(['Description', 'Length', 'Width', 'Quantity', 'Material Type', 'Material'])
         
     # Initialize Inventory CSV
-    inventory_path = os.path.join(project_dir, 'on-hand.csv')
+    inventory_path = os.path.join(project_dir, 'inventory.csv')
     with open(inventory_path, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['Label', 'Length', 'Width', 'Quantity', 'Material Type', 'Material'])
         
-    print(f"Initialized CSV templates: parts.csv, on-hand.csv")
+    print(f"Initialized CSV templates: parts.csv, inventory.csv")
     
     # Interactive Part Addition
     print("\n--- Setup Data ---")

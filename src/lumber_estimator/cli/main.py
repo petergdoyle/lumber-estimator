@@ -19,7 +19,7 @@ def main():
         
         project_dir = config.get('dir')
         parts_file = config.get('files', {}).get('parts', 'parts.csv')
-        inventory_file = config.get('files', {}).get('inventory', 'on-hand.csv')
+        inventory_file = config.get('files', {}).get('inventory', 'inventory.csv')
         
         parts_path = os.path.join(project_dir, parts_file)
         
