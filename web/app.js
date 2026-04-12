@@ -75,7 +75,24 @@ document.addEventListener('DOMContentLoaded', () => {
             
             projectNameEl.textContent = project.name || projectId;
             configViewer.textContent = JSON.stringify(project, null, 2);
-            estimationResults.innerHTML = '<p class="placeholder-text">Run estimation to see results here.</p>';
+            
+            // Try to load existing estimation results
+            try {
+                const estResponse = await fetch(`/api/projects/${projectId}/estimation`);
+                if (estResponse.ok) {
+                    const estData = await estResponse.json();
+                    renderEstimationResults(estData);
+                    downloadControls.classList.remove('hidden');
+                } else {
+                    // Not estimated yet or error
+                    estimationResults.innerHTML = '<p class="placeholder-text">Run estimation to see results here.</p>';
+                    downloadControls.classList.add('hidden');
+                }
+            } catch (e) {
+                console.error('Error fetching existing estimation:', e);
+                estimationResults.innerHTML = '<p class="placeholder-text">Run estimation to see results here.</p>';
+                downloadControls.classList.add('hidden');
+            }
             
             detailsSection.classList.remove('hidden');
         } catch (error) {

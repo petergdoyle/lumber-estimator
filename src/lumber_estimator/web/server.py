@@ -135,6 +135,31 @@ def archive_project(project_id: str):
             os.remove(archive_path)
         raise HTTPException(status_code=500, detail=f"Archival failed: {str(e)}")
 
+@app.get("/api/projects/{project_id}/estimation")
+def get_project_estimation(project_id: str):
+    project_dir = os.path.join("projects", project_id)
+    summary_path = os.path.join(project_dir, 'estimation_summary.csv')
+    
+    if not os.path.exists(summary_path):
+        raise HTTPException(status_code=404, detail="Estimation results not found.")
+        
+    try:
+        results = []
+        with open(summary_path, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Convert numeric strings to float where possible for cleaner UI rendering
+                processed_row = {}
+                for k, v in row.items():
+                    try:
+                        processed_row[k] = float(v) if '.' in v or v.isdigit() else v
+                    except:
+                        processed_row[k] = v
+                results.append(processed_row)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read estimation results: {str(e)}")
+
 @app.post("/api/projects/{project_id}/estimate")
 def estimate_project(project_id: str):
     try:
