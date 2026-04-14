@@ -4,7 +4,7 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (needed for matplotlib/pandas potentially)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -13,10 +13,12 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create directories for data persistence
+RUN mkdir -p /app/projects /app/archives /app/web
+
 # Copy the source code and web assets
 COPY src/ /app/src/
 COPY web/ /app/web/
-COPY projects/ /app/projects/
 
 # Set environment variables
 ENV PYTHONPATH=/app

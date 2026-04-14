@@ -54,5 +54,11 @@ docker-build:
 docker-up:
 	docker-compose up -d
 
+docker-down:
+	docker-compose down
+
+docker-logs:
+	docker-compose logs -f
+
 serve:
 	$(VENV)/bin/uvicorn src.lumber_estimator.web.server:app --reload

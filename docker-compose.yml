@@ -1,14 +1,14 @@
 version: '3.8'
 
 services:
-  estimator-web:
+  estimator:
     build: .
+    container_name: lumber-estimator
     ports:
       - "8000:8000"
     volumes:
       - ./projects:/app/projects
-      # Optional: mount src for hot-reloading in dev if using --reload
-      # - ./src:/app/src
+      - ./archives:/app/archives
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
