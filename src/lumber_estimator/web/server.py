@@ -13,7 +13,7 @@ from datetime import datetime
 
 from src.lumber_estimator.core.config import load_project_config
 from src.lumber_estimator.core.estimator import run_estimation
-from src.lumber_estimator.core.visualize import generate_volume_chart, compile_report_pdf, generate_buy_report_pdf
+from src.lumber_estimator.core.visualize import generate_volume_chart, compile_report_pdf, generate_buy_report_pdf, generate_inventory_report_pdf
 
 app = FastAPI(title="Lumber Estimator API")
 
@@ -171,6 +171,7 @@ def estimate_project(project_id: str):
         generate_volume_chart(summary_df, project_dir)
         compile_report_pdf(project_dir)
         generate_buy_report_pdf(project_dir)
+        generate_inventory_report_pdf(project_dir)
         
         return summary_df.to_dict(orient="records")
     except Exception as e:
@@ -184,7 +185,8 @@ def download_report(project_id: str, report_type: str):
     mapping = {
         "color": "visual_report.pdf",
         "grayscale": "visual_report_grayscale.pdf",
-        "buy": "buy_report.pdf"
+        "buy": "buy_report.pdf",
+        "inventory": "inventory_utilization.pdf"
     }
     
     if report_type not in mapping:
@@ -200,6 +202,41 @@ def download_report(project_id: str, report_type: str):
         media_type='application/pdf',
         filename=mapping[report_type]
     )
+
+@app.post("/api/projects/{project_id}/upload")
+async def upload_files(
+    project_id: str,
+    parts_file: Optional[UploadFile] = File(None),
+    inventory_file: Optional[UploadFile] = File(None)
+):
+    base_dir = "projects"
+    project_dir = os.path.join(base_dir, project_id)
+    
+    if not os.path.exists(project_dir):
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+        
+    # Validate headers if files are provided
+    if parts_file and parts_file.filename:
+        validate_csv_headers(parts_file, ['Description', 'Length', 'Width', 'Quantity', 'Material Type', 'Material'])
+    if inventory_file and inventory_file.filename:
+        validate_csv_headers(inventory_file, ['Label', 'Length', 'Width', 'Quantity', 'Material Type', 'Material'])
+
+    try:
+        # Handle Parts CSV
+        if parts_file and parts_file.filename:
+            parts_path = os.path.join(project_dir, 'parts.csv')
+            with open(parts_path, 'wb') as f:
+                shutil.copyfileobj(parts_file.file, f)
+                
+        # Handle Inventory CSV
+        if inventory_file and inventory_file.filename:
+            inventory_path = os.path.join(project_dir, 'inventory.csv')
+            with open(inventory_path, 'wb') as f:
+                shutil.copyfileobj(inventory_file.file, f)
+                
+        return {"status": "success", "message": "Files uploaded successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/projects")

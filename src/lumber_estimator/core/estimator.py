@@ -140,6 +140,12 @@ def run_estimation(config):
     # --- 2D BIN PACKING & SHOPPING LIST GENERATION ---
     shopping_list = []
     
+    # --- 2D BIN PACKING & SHOPPING LIST GENERATION ---
+    shopping_list = []
+    
+    # Track inventory utilization for report
+    inventory_util_data = [] 
+
     # Process layout algorithm grouping by material
     # Wipe legacy blueprint caches to prevent orphaned ghost files from compiling into the PDF
     import shutil
@@ -166,6 +172,7 @@ def run_estimation(config):
             
         # Gather Bins (Inventory)
         bins_list = []
+        all_bin_ids_for_mat = []
         try:
             if 'inv_df' in locals() and not inv_df.empty:
                 m_inv = inv_df[inv_df['material'] == mat]
@@ -173,12 +180,18 @@ def run_estimation(config):
                     lbl = b.get('label', f"Board_{i}")
                     if pd.isna(lbl):
                         lbl = f"Board_{i}"
+                    
+                    qty = int(float(b['qty']))
+                    for q in range(qty):
+                        bin_inst_id = f"{lbl}_{q+1}"
+                        all_bin_ids_for_mat.append(bin_inst_id)
+                    
                     bins_list.append({
                         'id': lbl,
                         'label': lbl,
                         'width': float(b['width_val']),
                         'length': float(b['length_val']),
-                        'qty': int(float(b['qty']))
+                        'qty': qty
                     })
         except Exception:
             pass
@@ -192,9 +205,37 @@ def run_estimation(config):
         
         pack_res = pack_material(parts_list, bins_list, kerf=cut_spacing, allow_rotation=allow_mat_rotation)
         
-        # Render Blueprint Visualizations
+        # Render Blueprint Visualizations and Track Utilization
+        used_bin_ids = set()
         for pbin in pack_res['packed_bins']:
+            bin_uid = pbin['bin_uid']
+            if "TO_BUY" not in str(bin_uid):
+                used_bin_ids.add(bin_uid)
+                inventory_util_data.append({
+                    'material': mat,
+                    'is_used': True,
+                    'bin_uid': bin_uid,
+                    'width': pbin['width'],
+                    'length': pbin['length'],
+                    'parts': pbin['rects']
+                })
             draw_packed_bin(pbin, mat, project_dir, kerf=cut_spacing)
+            
+        # Add Unused Bins to report data
+        for bin_inst_id in all_bin_ids_for_mat:
+            if bin_inst_id not in used_bin_ids:
+                # Find the original bin dimensions
+                # Note: This is slightly inefficient but safe
+                orig_bin = next((b for b in bins_list if b['label'] == bin_inst_id.rsplit('_', 1)[0]), None)
+                if orig_bin:
+                    inventory_util_data.append({
+                        'material': mat,
+                        'is_used': False,
+                        'bin_uid': bin_inst_id,
+                        'width': orig_bin['width'],
+                        'length': orig_bin['length'],
+                        'parts': []
+                    })
             
         # Collect Unpacked orphans for the dimensional shopping list
         # Instead of just dumping them loosely, we pack them into standard "Virtual Boards" for purchasing
@@ -323,8 +364,8 @@ def run_estimation(config):
                         
                         total_purchase_volume += vol
                         
-                        w_frac = format_fraction(w)
-                        l_frac = format_fraction(l)
+                        w_frac = format_fraction(w, max_denominator=32)
+                        l_frac = format_fraction(l, max_denominator=32)
                         mapped_boards.append(f"  - [ ] 1x `{w_frac}\" W  x  {l_frac}\" L`  *(Identifier: {board_row['Item to Procure']})*")
                 
                 # Derive final quote mapping
@@ -348,4 +389,57 @@ def run_estimation(config):
     except Exception as e:
         print(f"Warning: Failed to compile Markdown Buy Report - {e}")
     
+    # Generate Inventory Utilization Report Markdown
+    try:
+        from src.lumber_estimator.core.dimensions import format_fraction
+        util_lines = []
+        util_lines.append(f"# Inventory Utilization Report: {config.get('name', fallback_name).title()}")
+        util_lines.append(f"> Detailed breakdown of how current stock is utilized for this project.\n")
+
+        # Group data by material for the report
+        mats_with_util = sorted(list(set([d['material'] for d in inventory_util_data])))
+        
+        for mat in mats_with_util:
+            util_lines.append(f"## {mat}")
+            
+            mat_data = [d for d in inventory_util_data if d['material'] == mat]
+            used_data = [d for d in mat_data if d['is_used']]
+            unused_data = [d for d in mat_data if not d['is_used']]
+            
+            # Used Inventory Section
+            util_lines.append(f"### Used Inventory Pieces")
+            if not used_data:
+                util_lines.append("*No on-hand inventory of this material was used.*")
+            else:
+                for b in used_data:
+                    w_frac = format_fraction(b['width'], max_denominator=32)
+                    l_frac = format_fraction(b['length'], max_denominator=32)
+                    util_lines.append(f"- **{b['bin_uid']}** (`{w_frac}\" x {l_frac}\"`)")
+                    for p in b['parts']:
+                        # The packer returns 'width' and 'length' of the part rects
+                        pw_frac = format_fraction(p['width'], max_denominator=32)
+                        pl_frac = format_fraction(p['length'], max_denominator=32)
+                        util_lines.append(f"  - Cut: `{p['id']}` (`{pw_frac}\" x {pl_frac}\"`)")
+            
+            # Unused Inventory Section
+            util_lines.append(f"\n### Unused Inventory Pieces")
+            if not unused_data:
+                util_lines.append("*All on-hand inventory of this material was fully utilized.*")
+            else:
+                for b in unused_data:
+                    w_frac = format_fraction(b['width'], max_denominator=32)
+                    l_frac = format_fraction(b['length'], max_denominator=32)
+                    util_lines.append(f"- **{b['bin_uid']}** (`{w_frac}\" x {l_frac}\"`)")
+            
+            util_lines.append("") # Spacer
+            
+        if not mats_with_util:
+            util_lines.append("## No Inventory Data Available")
+            util_lines.append("No local inventory was provided or mapped for this project.")
+
+        with open(os.path.join(project_dir, 'inventory_utilization.md'), 'w') as f:
+            f.write("\n".join(util_lines))
+    except Exception as e:
+        print(f"Warning: Failed to compile Markdown Inventory Utilization Report - {e}")
+
     return summary_df

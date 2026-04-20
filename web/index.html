@@ -50,6 +50,7 @@
                         <div class="tabs">
                             <button class="tab-btn active" data-tab="summary">Summary</button>
                             <button class="tab-btn" data-tab="config">Configuration</button>
+                            <button class="tab-btn" data-tab="files">Files</button>
                         </div>
                         
                         <div class="tab-content active" id="tab-summary">
@@ -74,6 +75,11 @@
                                         <span class="checkmark"></span>
                                         Buy Report (PDF)
                                     </label>
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="dl-inventory" checked>
+                                        <span class="checkmark"></span>
+                                        Inventory Utilization Report
+                                    </label>
                                 </div>
                                 <button id="download-reports" class="btn-primary">Download Selected PDFs</button>
                             </div>
@@ -81,6 +87,28 @@
                         
                         <div class="tab-content" id="tab-config">
                             <pre id="config-viewer" class="code-block"></pre>
+                        </div>
+
+                        <div class="tab-content" id="tab-files">
+                            <div class="files-manage-container">
+                                <div class="file-upload-card">
+                                    <h3>Project Parts</h3>
+                                    <p>Update the list of parts needed for this project.</p>
+                                    <div class="upload-action">
+                                        <input type="file" id="upload-parts-input" class="hidden-input" accept=".csv">
+                                        <button id="btn-upload-parts" class="btn-secondary">Choose & Upload Parts</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="file-upload-card">
+                                    <h3>Lumber Inventory</h3>
+                                    <p>Update the available materials and stock.</p>
+                                    <div class="upload-action">
+                                        <input type="file" id="upload-inventory-input" class="hidden-input" accept=".csv">
+                                        <button id="btn-upload-inventory" class="btn-secondary">Choose & Upload Inventory</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

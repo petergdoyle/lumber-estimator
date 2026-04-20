@@ -572,6 +572,44 @@ footer {
     font-size: 0.85rem;
 }
 
+/* Files Management Tab */
+.files-manage-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.file-upload-card {
+    background-color: var(--secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.file-upload-card h3 {
+    font-size: 1.1rem;
+    color: var(--primary);
+}
+
+.file-upload-card p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.upload-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hidden-input {
+    display: none;
+}
+
 /* Responsive */
 @media (max-width: 800px) {
     .details-section {

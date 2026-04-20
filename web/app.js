@@ -17,6 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabContents = document.querySelectorAll('.tab-content');
     const toast = document.getElementById('toast');
 
+    // File Upload Elements
+    const uploadPartsInput = document.getElementById('upload-parts-input');
+    const uploadInventoryInput = document.getElementById('upload-inventory-input');
+    const btnUploadParts = document.getElementById('btn-upload-parts');
+    const btnUploadInventory = document.getElementById('btn-upload-inventory');
+
     // Confirm Modal Elements
     const confirmModal = document.getElementById('confirm-modal');
     const confirmTitle = document.getElementById('confirm-title');
@@ -165,7 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const types = [
             { id: 'dl-color', type: 'color' },
             { id: 'dl-grayscale', type: 'grayscale' },
-            { id: 'dl-buy', type: 'buy' }
+            { id: 'dl-buy', type: 'buy' },
+            { id: 'dl-inventory', type: 'inventory' }
         ];
 
         const selected = types.filter(t => document.getElementById(t.id).checked);
@@ -267,6 +274,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Upload Files
+    async function uploadProjectFile(file, type) {
+        if (!currentProject || !file) return;
+
+        const formData = new FormData();
+        formData.append(`${type}_file`, file);
+
+        const btn = type === 'parts' ? btnUploadParts : btnUploadInventory;
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+
+        try {
+            const response = await fetch(`/api/projects/${currentProject}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.detail || 'Upload failed');
+            }
+
+            showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} updated successfully!`);
+            
+            // Refresh config viewer
+            showProjectDetails(currentProject);
+            
+            // Clear estimation results since files changed
+            estimationResults.innerHTML = '<p class="placeholder-text text-muted">Files updated. Run estimation to see new results.</p>';
+            downloadControls.classList.add('hidden');
+            
+        } catch (error) {
+            showToast('Upload error: ' + error.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+            // Reset inputs to allow uploading the same file again if needed
+            uploadPartsInput.value = '';
+            uploadInventoryInput.value = '';
+        }
+    }
+
     // New Project Logic
     async function submitNewProject(e) {
         e.preventDefault();
@@ -326,6 +377,22 @@ document.addEventListener('DOMContentLoaded', () => {
         newProjectForm.reset();
     };
     newProjectForm.onsubmit = submitNewProject;
+
+    // File Upload Handlers
+    btnUploadParts.onclick = () => uploadPartsInput.click();
+    btnUploadInventory.onclick = () => uploadInventoryInput.click();
+
+    uploadPartsInput.onchange = (e) => {
+        if (e.target.files.length > 0) {
+            uploadProjectFile(e.target.files[0], 'parts');
+        }
+    };
+
+    uploadInventoryInput.onchange = (e) => {
+        if (e.target.files.length > 0) {
+            uploadProjectFile(e.target.files[0], 'inventory');
+        }
+    };
 
     // Close modal on outside click
     window.onclick = (event) => {

@@ -21,6 +21,19 @@ def generate_buy_report_pdf(project_dir):
         except Exception as e:
             print(f"Warning: Failed to generate buy_report.pdf - {e}")
 
+def generate_inventory_report_pdf(project_dir):
+    md_path = os.path.join(project_dir, 'inventory_utilization.md')
+    pdf_path = os.path.join(project_dir, 'inventory_utilization.pdf')
+    if os.path.exists(md_path):
+        try:
+            pdf = MarkdownPdf(toc_level=2)
+            with open(md_path, 'r') as f:
+                content = f.read()
+            pdf.add_section(Section(content))
+            pdf.save(pdf_path)
+        except Exception as e:
+            print(f"Warning: Failed to generate inventory_utilization.pdf - {e}")
+
 def generate_volume_chart(summary_df, output_dir):
     """
     Generate a bar chart comparing Required volume (With Waste) against On-Hand volume.
