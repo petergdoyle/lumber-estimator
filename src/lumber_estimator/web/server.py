@@ -215,6 +215,16 @@ async def upload_files(
     if not os.path.exists(project_dir):
         raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
         
+    # Get target filenames from project config
+    try:
+        config = load_project_config(project_id, base_dir=base_dir)
+        target_parts = config.get('files', {}).get('parts', 'parts.csv')
+        target_inventory = config.get('files', {}).get('inventory', 'inventory.csv')
+    except Exception as e:
+        # Fallback to defaults if config load fails
+        target_parts = 'parts.csv'
+        target_inventory = 'inventory.csv'
+
     # Validate headers if files are provided
     if parts_file and parts_file.filename:
         validate_csv_headers(parts_file, ['Description', 'Length', 'Width', 'Quantity', 'Material Type', 'Material'])
@@ -224,17 +234,17 @@ async def upload_files(
     try:
         # Handle Parts CSV
         if parts_file and parts_file.filename:
-            parts_path = os.path.join(project_dir, 'parts.csv')
+            parts_path = os.path.join(project_dir, target_parts)
             with open(parts_path, 'wb') as f:
                 shutil.copyfileobj(parts_file.file, f)
                 
         # Handle Inventory CSV
         if inventory_file and inventory_file.filename:
-            inventory_path = os.path.join(project_dir, 'inventory.csv')
+            inventory_path = os.path.join(project_dir, target_inventory)
             with open(inventory_path, 'wb') as f:
                 shutil.copyfileobj(inventory_file.file, f)
                 
-        return {"status": "success", "message": "Files uploaded successfully."}
+        return {"status": "success", "message": f"Files uploaded successfully ({target_parts}, {target_inventory})."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
