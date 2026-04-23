@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import re
+import math
 from src.lumber_estimator.core.config import load_project_config
 from src.lumber_estimator.core.dimensions import parse_fraction, calculate_bf, calculate_sqft
 from src.lumber_estimator.core.packer import pack_material
@@ -458,5 +459,181 @@ def run_estimation(config):
             f.write("\n".join(util_lines))
     except Exception as e:
         print(f"Warning: Failed to compile Markdown Inventory Utilization Report - {e}")
+
+    # Generate Data Verification Report Markdown
+    try:
+        from src.lumber_estimator.core.dimensions import format_fraction
+        ver_lines = []
+        ver_lines.append(f"# Data Verification Report: {config.get('name', fallback_name).title()}")
+        ver_lines.append(f"> side-by-side list of plan parts and inventory stock for data verification.\n")
+
+        # Get all unique materials from both sources
+        all_materials = sorted(list(set(parts_df['material'].unique()) | (set(inv_df['material'].unique()) if 'inv_df' in locals() and not inv_df.empty else set())))
+        
+        for mat in all_materials:
+            ver_lines.append(f"## {mat}")
+            
+            # Plan Parts Section
+            ver_lines.append(f"### Parts from Plan")
+            m_parts = parts_df[parts_df['material'] == mat]
+            if m_parts.empty:
+                ver_lines.append("*No parts found for this material in the plan.*")
+            else:
+                for idx, row in m_parts.iterrows():
+                    desc = row.get('description', f"Part_{idx}")
+                    w = format_fraction(row['width_val'], max_denominator=32)
+                    l = format_fraction(row['length_val'], max_denominator=32)
+                    qty = int(float(row['qty']))
+                    ver_lines.append(f"- **{desc}**: `{w}\" x {l}\"` ({qty} units)")
+            
+            # Inventory Stock Section
+            ver_lines.append(f"\n### Inventory on Hand")
+            if 'inv_df' in locals() and not inv_df.empty:
+                m_inv = inv_df[inv_df['material'] == mat]
+                if m_inv.empty:
+                    ver_lines.append("*No physical inventory found for this material.*")
+                else:
+                    for idx, row in m_inv.iterrows():
+                        lbl = row.get('label', f"Board_{idx}")
+                        w = format_fraction(row['width_val'], max_denominator=32)
+                        l = format_fraction(row['length_val'], max_denominator=32)
+                        qty = int(float(row['qty']))
+                        ver_lines.append(f"- **{lbl}**: `{w}\" x {l}\"` ({qty} units)")
+            else:
+                ver_lines.append("*No inventory data provided.*")
+            
+            ver_lines.append("") # Spacer
+            
+        if not all_materials:
+            ver_lines.append("## No Data Found")
+            ver_lines.append("Both parts and inventory files appear to be empty or missing.")
+
+        with open(os.path.join(project_dir, 'data_verification.md'), 'w') as f:
+            f.write("\n".join(ver_lines))
+    except Exception as e:
+        print(f"Warning: Failed to compile Markdown Data Verification Report - {e}")
+
+    # Generate Master Consolidated Report Markdown
+    try:
+        from src.lumber_estimator.core.dimensions import format_fraction
+        master_lines = []
+        master_lines.append(f"# Master Project Report: {config.get('name', fallback_name).title()}")
+        master_lines.append(f"> Consolidated view of data verification, inventory utilization, and purchasing requirements.\n")
+
+        # Reuse all_materials from Data Verification
+        for mat in all_materials:
+            master_lines.append(f"---")
+            master_lines.append(f"## {mat}")
+            
+            # Extract common material properties for this section
+            mat_row = summary_df[summary_df['Material'] == mat]
+            mat_type = mat_row.iloc[0]['Material Type'] if not mat_row.empty else "Lumber"
+            unit = mat_row.iloc[0]['Unit'] if not mat_row.empty else "BF"
+            thickness = extract_thickness(mat)
+            
+            # 1. Plan Overview (Data Verification)
+            master_lines.append(f"### I. Plan Overview")
+            m_parts = parts_df[parts_df['material'] == mat]
+            if not m_parts.empty:
+                master_lines.append("- **Required Parts:**")
+                net_vol = 0
+                for idx, row in m_parts.iterrows():
+                    w = format_fraction(row['width_val'], max_denominator=32)
+                    l = format_fraction(row['length_val'], max_denominator=32)
+                    qty = int(float(row['qty']))
+                    master_lines.append(f"  - `{row.get('description', f'Part_{idx}')}` ({w}\" x {l}\") x {qty}")
+                    
+                    if mat_type == 'Sheet Goods':
+                        part_v = calculate_sqft(row['length_val'], row['width_val']) * qty
+                    else:
+                        p_thick = row.get('thickness', thickness)
+                        part_v = calculate_bf(row['length_val'], row['width_val'], thickness_moniker=p_thick) * qty
+                    net_vol += part_v
+                
+                master_lines.append(f"- **Total Net Volume Needed:** {round(net_vol, 2)} {unit}")
+            
+            if 'inv_df' in locals() and not inv_df.empty:
+                m_inv = inv_df[inv_df['material'] == mat]
+                if not m_inv.empty:
+                    master_lines.append("- **On-Hand Inventory:**")
+                    for idx, row in m_inv.iterrows():
+                        w = format_fraction(row['width_val'], max_denominator=32)
+                        l = format_fraction(row['length_val'], max_denominator=32)
+                        master_lines.append(f"  - `{row.get('label', f'Board_{idx}')}` ({w}\" x {l}\") x {int(float(row['qty']))}")
+            
+            # 2. On-Hand Utilization (Inventory Utilization)
+            master_lines.append(f"\n### II. On-Hand Stock Utilization")
+            mat_util = [d for d in inventory_util_data if d['material'] == mat]
+            used_util = [d for d in mat_util if d['is_used']]
+            unused_util = [d for d in mat_util if not d['is_used']]
+            
+            if used_util:
+                master_lines.append("- **Used Stock Fulfillment:**")
+                for b in used_util:
+                    w = format_fraction(b['width'], max_denominator=32)
+                    l = format_fraction(b['length'], max_denominator=32)
+                    master_lines.append(f"  - **{b['bin_uid']}** (`{w}\" x {l}\"`)")
+                    for p in b['parts']:
+                        pw = format_fraction(p['width'], max_denominator=32)
+                        pl = format_fraction(p['length'], max_denominator=32)
+                        master_lines.append(f"    - Cut: `{p['id']}` (`{pl}\" x {pw}\"`)")
+            
+            if unused_util:
+                master_lines.append("- **Remaining Unused Stock:**")
+                for b in unused_util:
+                    w = format_fraction(b['width'], max_denominator=32)
+                    l = format_fraction(b['length'], max_denominator=32)
+                    master_lines.append(f"  - `{b['bin_uid']}` ({w}\" x {l}\")")
+            
+            if not used_util and not unused_util:
+                master_lines.append("*No on-hand inventory was utilized for this material.*")
+
+            # 3. Purchasing Requirements (Buy Report)
+            master_lines.append(f"\n### III. Purchasing Requirements")
+            mat_shop = [s for s in shopping_list if s['Material'] == mat]
+            
+            if mat_shop:
+                total_mat_vol = 0
+                for s_item in mat_shop:
+                    w = s_item['Required Width (in)']
+                    l = s_item['Required Length (in)']
+                    w_frac = format_fraction(w, max_denominator=32)
+                    l_frac = format_fraction(l, max_denominator=32)
+                    master_lines.append(f"- [ ] **Buy 1x `{w_frac}\" W x {l_frac}\" L`** (ID: {s_item['Item to Procure']})")
+                    
+                    if 'parts' in s_item and s_item['parts']:
+                        for p in s_item['parts']:
+                            pw = format_fraction(p['width'], max_denominator=32)
+                            pl = format_fraction(p['length'], max_denominator=32)
+                            master_lines.append(f"  - Fulfills: `{p['id']}` (`{pl}\" x {pw}\"`)")
+                    
+                    if mat_type == 'Sheet Goods':
+                        total_mat_vol += calculate_sqft(l, w)
+                    else:
+                        total_mat_vol += calculate_bf(l, w, thickness_moniker=thickness)
+                
+                display_vol = total_mat_vol
+                if display_vol == 0 and not mat_row.empty:
+                    display_vol = mat_row.iloc[0]['To Purchase']
+                    
+                summary_text = f"\n- **Total {mat} to Purchase:** {round(display_vol, 2)} {unit}"
+                if mat_type == 'Sheet Goods':
+                    # Assume 4x8 sheets (32 sqft)
+                    num_sheets = math.ceil(display_vol / 32.0)
+                    summary_text += f" ({float(num_sheets)} Sheets @ 4'x8')"
+                
+                master_lines.append(summary_text)
+            else:
+                master_lines.append("*Inventory sufficient; no additional purchase required.*")
+            
+            master_lines.append("") # Spacer
+            
+        if not all_materials:
+            master_lines.append("## No Data Available")
+
+        with open(os.path.join(project_dir, 'master_report.md'), 'w') as f:
+            f.write("\n".join(master_lines))
+    except Exception as e:
+        print(f"Warning: Failed to compile Markdown Master Report - {e}")
 
     return summary_df

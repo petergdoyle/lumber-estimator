@@ -8,6 +8,13 @@ import pandas as pd
 from PIL import Image
 from markdown_pdf import MarkdownPdf, Section
 
+# Modern, clean aesthetic for all document reports
+USER_CSS = "html { font-family: Arial, Helvetica, sans-serif; }"
+
+# Global Matplotlib Configuration for Arial-compatible charts
+plt.rcParams['font.sans-serif'] = ['Arial', 'Liberation Sans', 'DejaVu Sans', 'sans-serif']
+plt.rcParams['font.family'] = 'sans-serif'
+
 def generate_buy_report_pdf(project_dir):
     md_path = os.path.join(project_dir, 'buy_report.md')
     pdf_path = os.path.join(project_dir, 'buy_report.pdf')
@@ -16,7 +23,7 @@ def generate_buy_report_pdf(project_dir):
             pdf = MarkdownPdf(toc_level=2)
             with open(md_path, 'r') as f:
                 content = f.read()
-            pdf.add_section(Section(content))
+            pdf.add_section(Section(content), user_css=USER_CSS)
             pdf.save(pdf_path)
         except Exception as e:
             print(f"Warning: Failed to generate buy_report.pdf - {e}")
@@ -29,10 +36,36 @@ def generate_inventory_report_pdf(project_dir):
             pdf = MarkdownPdf(toc_level=2)
             with open(md_path, 'r') as f:
                 content = f.read()
-            pdf.add_section(Section(content))
+            pdf.add_section(Section(content), user_css=USER_CSS)
             pdf.save(pdf_path)
         except Exception as e:
             print(f"Warning: Failed to generate inventory_utilization.pdf - {e}")
+
+def generate_verification_report_pdf(project_dir):
+    md_path = os.path.join(project_dir, 'data_verification.md')
+    pdf_path = os.path.join(project_dir, 'data_verification.pdf')
+    if os.path.exists(md_path):
+        try:
+            pdf = MarkdownPdf(toc_level=2)
+            with open(md_path, 'r') as f:
+                content = f.read()
+            pdf.add_section(Section(content), user_css=USER_CSS)
+            pdf.save(pdf_path)
+        except Exception as e:
+            print(f"Warning: Failed to generate data_verification.pdf - {e}")
+
+def generate_master_report_pdf(project_dir):
+    md_path = os.path.join(project_dir, 'master_report.md')
+    pdf_path = os.path.join(project_dir, 'master_report.pdf')
+    if os.path.exists(md_path):
+        try:
+            pdf = MarkdownPdf(toc_level=2)
+            with open(md_path, 'r') as f:
+                content = f.read()
+            pdf.add_section(Section(content), user_css=USER_CSS)
+            pdf.save(pdf_path)
+        except Exception as e:
+            print(f"Warning: Failed to generate master_report.pdf - {e}")
 
 def generate_volume_chart(summary_df, output_dir):
     """

@@ -13,7 +13,7 @@ from datetime import datetime
 
 from src.lumber_estimator.core.config import load_project_config
 from src.lumber_estimator.core.estimator import run_estimation
-from src.lumber_estimator.core.visualize import generate_volume_chart, compile_report_pdf, generate_buy_report_pdf, generate_inventory_report_pdf
+from src.lumber_estimator.core.visualize import generate_volume_chart, compile_report_pdf, generate_buy_report_pdf, generate_inventory_report_pdf, generate_verification_report_pdf, generate_master_report_pdf
 
 app = FastAPI(title="Lumber Estimator API")
 
@@ -172,6 +172,8 @@ def estimate_project(project_id: str):
         compile_report_pdf(project_dir)
         generate_buy_report_pdf(project_dir)
         generate_inventory_report_pdf(project_dir)
+        generate_verification_report_pdf(project_dir)
+        generate_master_report_pdf(project_dir)
         
         return summary_df.to_dict(orient="records")
     except Exception as e:
@@ -186,7 +188,9 @@ def download_report(project_id: str, report_type: str):
         "color": "visual_report.pdf",
         "grayscale": "visual_report_grayscale.pdf",
         "buy": "buy_report.pdf",
-        "inventory": "inventory_utilization.pdf"
+        "inventory": "inventory_utilization.pdf",
+        "verification": "data_verification.pdf",
+        "master": "master_report.pdf"
     }
     
     if report_type not in mapping:

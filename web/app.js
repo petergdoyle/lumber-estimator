@@ -172,7 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 'dl-color', type: 'color' },
             { id: 'dl-grayscale', type: 'grayscale' },
             { id: 'dl-buy', type: 'buy' },
-            { id: 'dl-inventory', type: 'inventory' }
+            { id: 'dl-inventory', type: 'inventory' },
+            { id: 'dl-verification', type: 'verification' },
+            { id: 'dl-master', type: 'master' }
         ];
 
         const selected = types.filter(t => document.getElementById(t.id).checked);
