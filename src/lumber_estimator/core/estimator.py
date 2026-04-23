@@ -289,7 +289,8 @@ def run_estimation(config):
                         'Item to Procure': packed_pbin['bin_uid'],
                         'Description': "Virtual Shop Board",
                         'Required Width (in)': v_width,
-                        'Required Length (in)': v_length
+                        'Required Length (in)': v_length,
+                        'parts': packed_pbin['rects']
                     })
                 
                 # Advance remaining parts loop
@@ -304,7 +305,8 @@ def run_estimation(config):
                             'Item to Procure': upart['uid'],
                             'Description': "**OVERSIZED PART ERROR**",
                             'Required Width (in)': upart['width'],
-                            'Required Length (in)': upart['length']
+                            'Required Length (in)': upart['length'],
+                            'parts': []
                         })
                     break
                     
@@ -313,7 +315,14 @@ def run_estimation(config):
             
     # Save the custom shopping list of required material modules
     if shopping_list:
-        shop_df = pd.DataFrame(shopping_list)
+        # Create a copy for CSV export, dropping the complex 'parts' object to keep CSV clean
+        csv_shop_list = []
+        for s in shopping_list:
+            c = s.copy()
+            c.pop('parts', None)
+            csv_shop_list.append(c)
+            
+        shop_df = pd.DataFrame(csv_shop_list)
         shop_df.to_csv(os.path.join(project_dir, 'purchasing_dimensions.csv'), index=False)
     else:
         # Write an empty file to indicate perfection
@@ -337,12 +346,15 @@ def run_estimation(config):
         report_lines.append(f"> Auto-generated dimensional itemized purchasing guide.\n")
         
         buy_required = False
-        shop_df = pd.DataFrame(shopping_list) if shopping_list else pd.DataFrame()
+        # Use full shopping_list list here to access 'parts'
         
         for _, row in summary_df.iterrows():
             mat_name = row['Material']
             needs_volume_buy = row['To Purchase'] > 0.01
-            needs_physical_buy = not shop_df.empty and (mat_name in shop_df['Material'].values)
+            
+            # Check if any items in shopping_list match this material
+            mat_shop = [s for s in shopping_list if s['Material'] == mat_name]
+            needs_physical_buy = len(mat_shop) > 0
             
             if needs_volume_buy or needs_physical_buy:
                 buy_required = True
@@ -351,22 +363,27 @@ def run_estimation(config):
                 total_purchase_volume = 0.0
                 mapped_boards = []
                 
-                if not shop_df.empty:
-                    mat_shop = shop_df[shop_df['Material'] == mat_name]
-                    for _, board_row in mat_shop.iterrows():
-                        w = board_row['Required Width (in)']
-                        l = board_row['Required Length (in)']
-                        
-                        if row['Material Type'] == 'Sheet Goods':
-                            vol = calculate_sqft(l, w)
-                        else:
-                            vol = calculate_bf(l, w, thickness_moniker=mat_name)
-                        
-                        total_purchase_volume += vol
-                        
-                        w_frac = format_fraction(w, max_denominator=32)
-                        l_frac = format_fraction(l, max_denominator=32)
-                        mapped_boards.append(f"  - [ ] 1x `{w_frac}\" W  x  {l_frac}\" L`  *(Identifier: {board_row['Item to Procure']})*")
+                for s_item in mat_shop:
+                    w = s_item['Required Width (in)']
+                    l = s_item['Required Length (in)']
+                    
+                    if row['Material Type'] == 'Sheet Goods':
+                        vol = calculate_sqft(l, w)
+                    else:
+                        vol = calculate_bf(l, w, thickness_moniker=mat_name)
+                    
+                    total_purchase_volume += vol
+                    
+                    w_frac = format_fraction(w, max_denominator=32)
+                    l_frac = format_fraction(l, max_denominator=32)
+                    mapped_boards.append(f"  - [ ] 1x `{w_frac}\" W  x  {l_frac}\" L`  *(Identifier: {s_item['Item to Procure']})*")
+                    
+                    # Add detailed part breakdown for each board
+                    if 'parts' in s_item and s_item['parts']:
+                        for p in s_item['parts']:
+                            pw_frac = format_fraction(p['width'], max_denominator=32)
+                            pl_frac = format_fraction(p['length'], max_denominator=32)
+                            mapped_boards.append(f"    - Fulfills: `{p['id']}` (`{pl_frac}\" x {pw_frac}\"`)")
                 
                 # Derive final quote mapping
                 display_volume = total_purchase_volume if total_purchase_volume > 0 else row['To Purchase']
