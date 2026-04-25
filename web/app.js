@@ -172,9 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 'dl-color', type: 'color' },
             { id: 'dl-grayscale', type: 'grayscale' },
             { id: 'dl-buy', type: 'buy' },
+            { id: 'dl-buy-md', type: 'buy_md' },
             { id: 'dl-inventory', type: 'inventory' },
+            { id: 'dl-inventory-md', type: 'inventory_md' },
             { id: 'dl-verification', type: 'verification' },
-            { id: 'dl-master', type: 'master' }
+            { id: 'dl-verification-md', type: 'verification_md' },
+            { id: 'dl-master', type: 'master' },
+            { id: 'dl-master-md', type: 'master_md' }
         ];
 
         const selected = types.filter(t => document.getElementById(t.id).checked);

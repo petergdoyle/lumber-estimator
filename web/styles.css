@@ -616,3 +616,26 @@ footer {
         width: 100%;
     }
 }
+/* Report Downloads Grid */
+.download-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dl-group {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.secondary-dl {
+    margin-left: 1.5rem;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}

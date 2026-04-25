@@ -188,13 +188,18 @@ def download_report(project_id: str, report_type: str):
         "color": "visual_report.pdf",
         "grayscale": "visual_report_grayscale.pdf",
         "buy": "buy_report.pdf",
+        "buy_md": "buy_report.md",
         "inventory": "inventory_utilization.pdf",
+        "inventory_md": "inventory_utilization.md",
         "verification": "data_verification.pdf",
-        "master": "master_report.pdf"
+        "verification_md": "data_verification.md",
+        "master": "master_report.pdf",
+        "master_md": "master_report.md"
     }
     
     if report_type not in mapping:
-        raise HTTPException(status_code=400, detail="Invalid report type. Use 'color', 'grayscale', or 'buy'.")
+        allowed = ", ".join(mapping.keys())
+        raise HTTPException(status_code=400, detail=f"Invalid report type. Supported: {allowed}")
     
     file_path = os.path.join(project_dir, mapping[report_type])
     

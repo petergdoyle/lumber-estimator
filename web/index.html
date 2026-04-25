@@ -60,36 +60,70 @@
                             <div id="download-controls" class="download-container hidden">
                                 <h3>Download Reports</h3>
                                 <div class="download-options">
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="dl-color" checked>
-                                        <span class="checkmark"></span>
-                                        Color Visual Report
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="dl-grayscale">
-                                        <span class="checkmark"></span>
-                                        Grayscale Visual Report
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="dl-buy" checked>
-                                        <span class="checkmark"></span>
-                                        Buy Report (PDF)
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="dl-inventory" checked>
-                                        <span class="checkmark"></span>
-                                        Inventory Utilization Report
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="dl-verification" checked>
-                                        <span class="checkmark"></span>
-                                        Data Verification Report
-                                    </label>
-                                    <label class="checkbox-container">
-                                        <input type="checkbox" id="dl-master" checked>
-                                        <span class="checkmark"></span>
-                                        Master Project Report (Consolidated)
-                                    </label>
+                                    <div class="dl-group">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="dl-color" checked>
+                                            <span class="checkmark"></span>
+                                            Visual Layout (Color PDF)
+                                        </label>
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="dl-grayscale">
+                                            <span class="checkmark"></span>
+                                            Visual Layout (Grayscale)
+                                        </label>
+                                    </div>
+
+                                    <div class="dl-group">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="dl-master" checked>
+                                            <span class="checkmark"></span>
+                                            Master Project Report (PDF)
+                                        </label>
+                                        <label class="checkbox-container secondary-dl">
+                                            <input type="checkbox" id="dl-master-md">
+                                            <span class="checkmark"></span>
+                                            Master (Markdown)
+                                        </label>
+                                    </div>
+
+                                    <div class="dl-group">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="dl-verification" checked>
+                                            <span class="checkmark"></span>
+                                            Data Verification (PDF)
+                                        </label>
+                                        <label class="checkbox-container secondary-dl">
+                                            <input type="checkbox" id="dl-verification-md">
+                                            <span class="checkmark"></span>
+                                            Verification (Markdown)
+                                        </label>
+                                    </div>
+
+                                    <div class="dl-group">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="dl-buy" checked>
+                                            <span class="checkmark"></span>
+                                            Shopping List (PDF)
+                                        </label>
+                                        <label class="checkbox-container secondary-dl">
+                                            <input type="checkbox" id="dl-buy-md">
+                                            <span class="checkmark"></span>
+                                            Shopping List (Markdown)
+                                        </label>
+                                    </div>
+
+                                    <div class="dl-group">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="dl-inventory" checked>
+                                            <span class="checkmark"></span>
+                                            Inventory Utilization (PDF)
+                                        </label>
+                                        <label class="checkbox-container secondary-dl">
+                                            <input type="checkbox" id="dl-inventory-md">
+                                            <span class="checkmark"></span>
+                                            Inventory Utilization (Markdown)
+                                        </label>
+                                    </div>
                                 </div>
                                 <button id="download-reports" class="btn-primary">Download Selected PDFs</button>
                             </div>
